@@ -1,0 +1,19 @@
+Package: walk
+Type: Package
+Title: Inference for continuous-time correlated random walk models
+Version: 0.0.1
+Author: Devin Johnson and Josh London
+Maintainer: Devin S. Johnson <devin.johnson@noaa.gov>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1
+LinkingTo: 
+    TMB,
+    RcppEigen
+Suggests:
+    foisGras
+Depends: 
+    R (>= 3.3.0)
