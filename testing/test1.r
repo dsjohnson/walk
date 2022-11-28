@@ -4,7 +4,7 @@ library(magrittr)
 library(walk)
 v <- c(90,1) %>% {t(./sum(.))}
 M <- matrix(c(2,1,2,1),2,2); diag(M) <- -diag(M)
-M <- Matrix(M)
+M <- Matrix(M) %>% as("dgCMatrix")
 
 walk:::my_test(v, M*0.01, prec=1.0e-10)
 
