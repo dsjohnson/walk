@@ -5,6 +5,9 @@
 # Therefore, other Makevars flags can be added here, e.g.,
 #
 ## CXX_STD = CXX14 # uncomment this line to enable C++14 support
+
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+
 #
 # Flags specifically for the TMB compilation can also be set
 # through the 'TMB_FLAGS' argument below, e.g.,

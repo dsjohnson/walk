@@ -9,9 +9,11 @@ Description: Model animal movement using continuous-time Makov chain models.
 License: CC0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 Imports: 
     TMB (>= 1.9.0)
 LinkingTo: 
-    TMB, Rcpp, RcppArmadillo, expQ2
+    TMB, Rcpp, RcppArmadillo, expQ2, Matrix
+Remotes: 
+    dsjohnson/expQ2
 NeedsCompilation: yes
