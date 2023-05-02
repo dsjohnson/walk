@@ -7,3 +7,6 @@ src/*.so
 src/*.dll
 .DS_Store
 src/.DS_Store
+testing/st_book
+src/TMB/*.o
+src/TMB/*.so
