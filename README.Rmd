@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 ### Binary
 
 ```{r, eval=FALSE}
-install.packages('wlak', repos='https://dsjohnson.r-universe.dev')
+install.packages('walk', repos='https://dsjohnson.r-universe.dev')
 ```
 
 ### Source

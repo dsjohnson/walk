@@ -9,7 +9,7 @@
 ### Binary
 
 ``` r
-install.packages('wlak', repos='https://dsjohnson.r-universe.dev')
+install.packages('walk', repos='https://dsjohnson.r-universe.dev')
 ```
 
 ### Source
