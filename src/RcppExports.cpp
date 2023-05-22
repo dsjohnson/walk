@@ -11,6 +11,55 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// phi_exp_G
+arma::mat phi_exp_G(const arma::mat& v, const arma::sp_mat& G, const double& prec);
+RcppExport SEXP _walk_phi_exp_G(SEXP vSEXP, SEXP GSEXP, SEXP precSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type v(vSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type G(GSEXP);
+    Rcpp::traits::input_parameter< const double& >::type prec(precSEXP);
+    rcpp_result_gen = Rcpp::wrap(phi_exp_G(v, G, prec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// load_Q
+arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& idx_q, const arma::vec& Xb_q, const arma::vec& off_q, const int& ns);
+RcppExport SEXP _walk_load_Q(SEXP from_toSEXP, SEXP idx_qSEXP, SEXP Xb_qSEXP, SEXP off_qSEXP, SEXP nsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::umat& >::type from_to(from_toSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type idx_q(idx_qSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q(Xb_qSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type off_q(off_qSEXP);
+    Rcpp::traits::input_parameter< const int& >::type ns(nsSEXP);
+    rcpp_result_gen = Rcpp::wrap(load_Q(from_to, idx_q, Xb_q, off_q, ns));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ctmc_arma
+Rcpp::List ctmc_arma(const arma::vec& id, const arma::vec& period, const arma::vec& dt, const arma::vec& cell, const int& ns, const int& np, const arma::umat& from_to_q, const arma::mat& X_q, const arma::vec& off_q, const arma::vec& idx_q, const arma::vec& beta_q);
+RcppExport SEXP _walk_ctmc_arma(SEXP idSEXP, SEXP periodSEXP, SEXP dtSEXP, SEXP cellSEXP, SEXP nsSEXP, SEXP npSEXP, SEXP from_to_qSEXP, SEXP X_qSEXP, SEXP off_qSEXP, SEXP idx_qSEXP, SEXP beta_qSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type id(idSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type period(periodSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type dt(dtSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type cell(cellSEXP);
+    Rcpp::traits::input_parameter< const int& >::type ns(nsSEXP);
+    Rcpp::traits::input_parameter< const int& >::type np(npSEXP);
+    Rcpp::traits::input_parameter< const arma::umat& >::type from_to_q(from_to_qSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X_q(X_qSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type off_q(off_qSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type idx_q(idx_qSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type beta_q(beta_qSEXP);
+    rcpp_result_gen = Rcpp::wrap(ctmc_arma(id, period, dt, cell, ns, np, from_to_q, X_q, off_q, idx_q, beta_q));
+    return rcpp_result_gen;
+END_RCPP
+}
 // my_test
 arma::mat my_test(const arma::mat v, SEXP Q, double prec, bool renorm, bool t2, bool checks);
 RcppExport SEXP _walk_my_test(SEXP vSEXP, SEXP QSEXP, SEXP precSEXP, SEXP renormSEXP, SEXP t2SEXP, SEXP checksSEXP) {
@@ -29,6 +78,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_walk_phi_exp_G", (DL_FUNC) &_walk_phi_exp_G, 3},
+    {"_walk_load_Q", (DL_FUNC) &_walk_load_Q, 5},
+    {"_walk_ctmc_arma", (DL_FUNC) &_walk_ctmc_arma, 11},
     {"_walk_my_test", (DL_FUNC) &_walk_my_test, 6},
     {NULL, NULL, 0}
 };
