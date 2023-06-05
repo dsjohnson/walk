@@ -4,12 +4,18 @@
 \name{walk-package}
 \alias{walk}
 \alias{walk-package}
-\title{walk: What the Package Does (One Line, Title Case)}
+\title{walk: Model Animal Movement With Continuous-Time Makov Chains}
 \description{
 Model animal movement using continuous-time Makov chain models.
 }
 \author{
-\strong{Maintainer}: Devin Johnson \email{devin.johnson@noaa.gov} (\href{https://orcid.org/0000-0002-0068-7098}{ORCID})
+\strong{Maintainer}: Devin S. Johnson \email{devin.johnson@noaa.gov}
+
+Authors:
+\itemize{
+  \item James T. Thorson \email{james.throson@noaa.gov}
+  \item Janelle J. Badger \email{janelle.badger@noaa.gov}
+}
 
 }
 \keyword{internal}

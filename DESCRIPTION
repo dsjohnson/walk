@@ -1,19 +1,22 @@
 Package: walk
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9001
-Date: 2022-11-28
+Title: Model Animal Movement With Continuous-Time Makov Chains
+Version: 0.0.0.903
+Date: 2023-06-05
 Authors@R: 
-    person("Devin", "Johnson", , "devin.johnson@noaa.gov", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0002-0068-7098"))
+    c(
+    person("Devin S.", "Johnson", email="devin.johnson@noaa.gov", role = c("aut", "cre")),
+    person("James T.", "Thorson", email="james.throson@noaa.gov", role = c("aut")),
+    person("Janelle J.", "Badger", email="janelle.badger@noaa.gov", role = c("aut"))
+    )
 Description: Model animal movement using continuous-time Makov chain models.
 License: CC0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports: 
-    TMB (>= 1.9.0)
+    TMB (>= 1.9.0), Matrix, terra, ctmm
 LinkingTo: 
-    TMB, Rcpp, RcppArmadillo, expQ2, Matrix
+    TMB, Rcpp, RcppArmadillo, expQ2
 Remotes: 
     dsjohnson/expQ2
 NeedsCompilation: yes

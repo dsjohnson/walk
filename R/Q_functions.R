@@ -19,7 +19,7 @@ get_Q <- function(fit, sparse=TRUE){
 }
 
 #' @title Get the limiting utilization distribution of the CTMC movement process
-#' @param fit A moveMMPP fitted model object from \code{\link[ctmc_arma]{ctmc_arma}}.
+#' @param fit A ctmc fitted model object from \code{\link[ctmc_arma]{ctmc_arma}}.
 #' @author Devin S. Johnson
 #' @export
 #' @importFrom Matrix t
