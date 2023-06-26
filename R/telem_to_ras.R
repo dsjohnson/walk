@@ -1,25 +1,27 @@
 
-#' @title Convert {ctmm} telemtry data object to a SpatRaster stack
+#' @title Convert {ctmm} telemtry data object to a {terra} `SpatRaster` stack
 #' @param data A `telemetry` object from the {ctmm} package
 #' @param cov A `\link[terra]{SpatRaster}` stack of covariates that will be used in CTMC 
-#' movement modeling.
-#' @param mask A `\link[terra]{SpatRaster}` object. Cells with `0` in the raster will be interpreted 
-#' as areas where the animal cannot go. So, likelihood surfaces will be `0` for those cells.
+#' movement modeling. Cells with `NA` values will be considered areas to the animal cannot travel, i.e., 
+#' likelihood surfaces will be `0` for those cells.
 #' @param return_type Type of object returned. One if `"data.frame"`, `"sparse"` (sparse matrix), 
 #' `"matrix_df"` (matrix form of `"data.frame"`), or `"dense"` (dense matrix).
 #' @param max_err The maximum error in meters. If unspecified it will be set to
 #' 4 times the maximum error standard deviation as determined by the UERE and HDOP
 #' of the telemetry data.
+#' @param trunc The smallest probability value that is considered to be > 0. Deafults to 1.0e-8.
 #' @details This function takes the HDOP information in the `telemetry` object to 
 #' produce a `SpatRaster` likelihood surface over the `SpatRaster` defined by 
 #' the `raster` argument for each location. This can then be passed to 
 #' CTMC HMM fitting functions. 
 #' @author Devin S. Johnson
-#' @import ctmm terra 
 #' @importFrom mvtnorm pmvnorm
 #' @importFrom Matrix sparseMatrix
+#' @importFrom terra vect buffer cells crds is.lonlat xyFromCell crs
+#' @importFrom ctmm uere
+#' @importFrom methods as
 #' @export
-telem_to_sparse <- function(data, cov, mask=NULL, return_type="sparse", max_err=NULL, trunc=1.0e-8){
+telem_to_sparse <- function(data, cov, return_type="sparse", max_err=NULL, trunc=1.0e-8){
   # Check arguments
   if(!inherits(data, "telemetry")) stop("'data' must be a ctmm::telemery object!")
   if(!inherits(cov, "SpatRaster")) stop("'cov' must be a terra::SpatRaster object!")
@@ -48,7 +50,7 @@ telem_to_sparse <- function(data, cov, mask=NULL, return_type="sparse", max_err=
     terra::project(cov_prj)
   if(is.null(max_err)) max_err <- 4*sqrt(pmax(cov_xx,cov_yy))
   t_buf <- terra::buffer(telem_pts, max_err)
-  t_err <- cells(cov, t_buf, touches=TRUE) 
+  t_err <- terra::cells(cov, t_buf, touches=TRUE) 
   t_err <- split(t_err[,'cell'], t_err[,'ID'])
   xy <- terra::crds(telem_pts) 
   
@@ -96,7 +98,7 @@ telem_to_sparse <- function(data, cov, mask=NULL, return_type="sparse", max_err=
   # 
   # Possible extention:
   # https://stackoverflow.com/questions/51290014/rcpp-implementation-of-mvtnormpmvnorm-slower-than-original-r-function
-  
+  #  source code: https://rdrr.io/cran/mvtnorm/src/R/mvt.R
   
   
 }

@@ -2,12 +2,11 @@
 % Please edit documentation in R/telem_to_ras.R
 \name{telem_to_sparse}
 \alias{telem_to_sparse}
-\title{Convert {ctmm} telemtry data object to a SpatRaster stack}
+\title{Convert {ctmm} telemtry data object to a {terra} \code{SpatRaster} stack}
 \usage{
 telem_to_sparse(
   data,
   cov,
-  mask = NULL,
   return_type = "sparse",
   max_err = NULL,
   trunc = 1e-08
@@ -17,10 +16,8 @@ telem_to_sparse(
 \item{data}{A \code{telemetry} object from the {ctmm} package}
 
 \item{cov}{A \verb{\link[terra]\{SpatRaster\}} stack of covariates that will be used in CTMC
-movement modeling.}
-
-\item{mask}{A \verb{\link[terra]\{SpatRaster\}} object. Cells with \code{0} in the raster will be interpreted
-as areas where the animal cannot go. So, likelihood surfaces will be \code{0} for those cells.}
+movement modeling. Cells with \code{NA} values will be considered areas to the animal cannot travel, i.e.,
+likelihood surfaces will be \code{0} for those cells.}
 
 \item{return_type}{Type of object returned. One if \code{"data.frame"}, \code{"sparse"} (sparse matrix),
 \code{"matrix_df"} (matrix form of \code{"data.frame"}), or \code{"dense"} (dense matrix).}
@@ -28,9 +25,11 @@ as areas where the animal cannot go. So, likelihood surfaces will be \code{0} fo
 \item{max_err}{The maximum error in meters. If unspecified it will be set to
 4 times the maximum error standard deviation as determined by the UERE and HDOP
 of the telemetry data.}
+
+\item{trunc}{The smallest probability value that is considered to be > 0. Deafults to 1.0e-8.}
 }
 \description{
-Convert {ctmm} telemtry data object to a SpatRaster stack
+Convert {ctmm} telemtry data object to a {terra} \code{SpatRaster} stack
 }
 \details{
 This function takes the HDOP information in the \code{telemetry} object to
