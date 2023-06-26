@@ -17,7 +17,7 @@
 #' @author Devin S. Johnson
 #' @importFrom mvtnorm pmvnorm
 #' @importFrom Matrix sparseMatrix
-#' @importFrom terra vect buffer cells crds is.lonlat xyFromCell crs
+#' @importFrom terra vect buffer cells crds is.lonlat xyFromCell crs project
 #' @importFrom ctmm uere
 #' @importFrom methods as
 #' @export
