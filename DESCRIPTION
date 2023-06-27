@@ -1,7 +1,7 @@
 Package: walk
 Title: Model Animal Movement With Continuous-Time Makov Chains
-Version: 0.0.0.904
-Date: 2023-06-26
+Version: 0.0.0.905
+Date: 2023-06-27
 Authors@R: 
     c(
     person("Devin S.", "Johnson", email="devin.johnson@noaa.gov", role = c("aut", "cre")),
