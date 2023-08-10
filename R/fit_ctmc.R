@@ -1,6 +1,6 @@
 #' @title Fit CTMC movement model
-#' @param data A processed data frame produced by the function \code{\link{process_data}}
-#' @param ddl A design data list produced by the function \code{\link{make_design_data}}.
+#' @param Q_dd Design data produced by the function \code{\link{sparse_Q_df}}.
+#' @param Lik_mat Sparse matrix
 #' @param model_parameters Model formula for the detection and movement portions
 #' of the MMPP model. Must be of the form, e.g., 
 #'  \code{list(lambda=list(form=~1, offset=NULL), q=list(form=~1, offset=~log(1.num_neigh)))}. For the 
@@ -20,54 +20,48 @@
 #' @import optimx dplyr numDeriv
 #' @importFrom stats ppois
 #' @export
-ctmc_arma <- function(data, ddl, 
+fit_ctmc <- function(Q_dd, L, 
                      model_parameters = list(
-                       lambda = list(form=~1, offset=~NULL),
-                       q = list(form=~1, offset=~log(1/num_neigh)-1)
+                       Q = list(res_form=~1, move_form=~1, separable=TRUE),
+                       L = NULL
                      ), 
                      hessian=TRUE, start=NULL, method="nlminb", fit=TRUE, 
                      debug=0, ...){
   
-  cell <- cellx <- fix <- NULL
-  
   if(debug==1) browser()
   
-  cell_idx_df <- select(ddl$lambda, cell, cellx) %>% distinct()
-  data <- data %>% left_join(cell_idx_df, by="cell")
-  
-  dml_list <- dm_lambda(model_parameters$lambda, ddl)
-  dmq_list <- dm_q(model_parameters$q, ddl)
-  
-  data$period <- ifelse(is.na(data$cell), data$period-1, data$period)
+  separable <- model_parameters$Q$separable
+  if(is.null(separable)) separable <- TRUE
+  # Design matrices
+  Xr <- model.matrix(model_parameters$Q$r_form, Q_dd)
+  Xr <- Xr[,rcheck_cols(Xr),drop=FALSE]
+  Xm <- model.matrix(model_parameters$Q$m_form, Q_dd)
+  Xm <- Xm[,mcheck_cols(Xm),drop=FALSE]
+  if(separable){
+    Xr <- cbind(cell=Q_dd$r_cell, Xr)
+    Xr <- unique(Xr)
+    Xr <- Xr[,-1]
+  }
   
   data_list <- list(
-    N = as.integer(nrow(data)),
-    ns = as.integer(length(unique(ddl$lambda$cell))),
-    np = as.integer(max(ddl$quad_pts$period)),
-    # detection
-    id = data$idx-1,
-    period = as.integer(data$period-1),
-    dt = data$delta,
-    cell = as.integer(data$cellx-1),
-
-    # Q
-    from_q = as.integer(dmq_list$idx_q$from_cellx-1),
-    to_q = as.integer(dmq_list$idx_q$to_cellx-1),
-    X_q = dmq_list$X_q,
-    off_q = dmq_list$off_q,
-    idx_q = as.integer(dmq_list$idx_q$idx_q-1)
-  )
+    Xr = Xr, 
+    Xm = Xm,
+    L = L,
+    from_to = as.matrix(Q_dd[,c("r_cell","m_cell")]),
+    sep = separable,
+    r_idx <- 1:ncol(Xr),
+    m_idx <- c(1:ncol(Xm)) + ncol(Xr)
+    )
   
   if(is.null(start)){
     par_list <- list(
-      beta_l=rep(0,ncol(dml_list$X_l)), 
-      beta_q=rep(0, ncol(dmq_list$X_q))
+      beta_r=rep(0, ncol(Xr)), 
+      beta_m=rep(0, ncol(Xm))
     )
   } else{
     par_list=start
   }
-  
-  start <- c(par_list$beta_l, par_list$beta_q)
+  start <- c(par_list$beta_r, par_list$beta_m)
   
   # message('Building model...')
   # foo <- MakeADFun(
@@ -83,7 +77,7 @@ ctmc_arma <- function(data, ddl,
     message('Optimizing likelihood...')  
     if(debug==2) browser()
     # opt <- nlminb(start=start, objective=mmpp_ll, data_list=data_list, ...)
-    opt <- optimx::optimr(par=start, fn=mmpp_ll, method=method, data_list=data_list, ...)
+    opt <- optimx::optimr(par=start, fn=ctmc_n2ll, method=method, data_list=data_list, ...)
     
     if(opt$convergence!=0){
       message("There was a problem with optimization... See output 'optimx' object.")
@@ -203,10 +197,10 @@ ctmc_arma <- function(data, ddl,
       # ),
       beta = beta,
       real = real
-    #   real = list(
-    #     lambda = df_l,
-    #     q = df_q
-    #   )
+      #   real = list(
+      #     lambda = df_l,
+      #     q = df_q
+      #   )
     ),
     opt = opt,
     start=start,

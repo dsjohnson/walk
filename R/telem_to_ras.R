@@ -61,6 +61,7 @@ telem_to_ras <- function(data, ras, return_type="sparse", max_err=NULL, trunc=1.
   
   for(i in 1:nrow(xy)){
     # i <- 1
+    if(any(!is.finite(t_err[[i]]))) stop("There are error buffered locations completely outside of raster area.")
     sigma <- matrix(c(cov_xx[i], cov_xy[i], cov_xy[i], cov_yy[i]), 2, 2)
     mean <- as.vector(xy[i,])
     lower <- get_corner(t_err[[i]], ras, "ll")
