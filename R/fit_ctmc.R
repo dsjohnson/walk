@@ -1,11 +1,8 @@
 #' @title Fit CTMC movement model
-#' @param Q_dd Design data produced by the function \code{\link{sparse_Q_df}}.
-#' @param Lik_mat Sparse matrix
-#' @param model_parameters Model formula for the detection and movement portions
-#' of the MMPP model. Must be of the form, e.g., 
-#'  \code{list(lambda=list(form=~1, offset=NULL), q=list(form=~1, offset=~log(1.num_neigh)))}. For the 
-#'  \code{q} model you must use \code{offset=0} to not have one. If it is left off, \code{offset=~log(1.num_neigh)))}
-#'  will be used. 
+#' @param Q_dd Design data list produced by the function \code{\link{make_Q_data}}.
+#' @param Lik_mat Sparse matrix where each row is the likelihood surface for the corresponding location observation.x
+#' @param model_parameters Model formula for the residency and movement portions of the model, e.g., 
+#'  \code{list(Q = list(q_r=~1, q_m=~1, separable=TRUE), L = NULL)}.
 #' @param hessian Logical. Should the Hessian matrix be calculated to obtain the parameter
 #' variance-covariance matrix.
 #' @param start Optional starting values for the parameter must be a list of the 
@@ -16,19 +13,29 @@
 #' package developers. 
 #' @param ... Additional arguments passed to the optimization function 
 #' \code{\link[optimx]{optimr}} from the \code{\link[optimx]{optimx-package}}.
+#' @details
+#' The \code{separable = TRUE} element of the \code{Q} list for \code{model.parameters} indicates that the 
+#' separable parameteriztion of Hewitt et al. (2023) will be used. If set to \code{separable = FALSE}
+#' the traditional loglinear formulation of Johnson et al. (2021) and Hanks et al. (2015) will be used. If  \code{separable = FALSE} the 
+#' \code{q_r} formula is ignored. 
+#' @references Hanks, E. M., Hooten, M. B., and Alldredge, M. W. (2015) Continuous-time discrete-space models for animal movement. Annals of Applied Statistics. 9:145-165.
+#' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
+#' @references Johnson, D. S., Pelland, N. A., and Sterling, J. T. (2021) A Continuous-Time Semi-Markov Model for Animal Movement in a Dynamic Environment. The Annals of Applied Statistics, 15:797-812.
 #' @author Devin S. Johnson
 #' @import optimx dplyr numDeriv
 #' @importFrom stats ppois
 #' @export
-fit_ctmc <- function(Q_dd, L, 
+fit_ctmc <- function(Q_dd, Lik_mat, 
                      model_parameters = list(
-                       Q = list(res_form=~1, move_form=~1, separable=TRUE),
+                       Q = list(q_r=~1, q_m=~1, separable=TRUE),
                        L = NULL
                      ), 
                      hessian=TRUE, start=NULL, method="nlminb", fit=TRUE, 
                      debug=0, ...){
   
   if(debug==1) browser()
+  
+  if(!inherits(Q_dd, "Qdf")) stop(" 'Q_dd' is not a Q design data list. See '?walk::make_Q_data'")
   
   separable <- model_parameters$Q$separable
   if(is.null(separable)) separable <- TRUE
@@ -47,7 +54,7 @@ fit_ctmc <- function(Q_dd, L,
     Xr = Xr, 
     Xm = Xm,
     L = L,
-    from_to = as.matrix(Q_dd[,c("r_cell","m_cell")]),
+    nb_idx = as.matrix(Q_dd[,c("r_site_idx","m_site_idx")]),
     sep = separable,
     r_idx <- 1:ncol(Xr),
     m_idx <- c(1:ncol(Xm)) + ncol(Xr)
@@ -87,7 +94,7 @@ fit_ctmc <- function(Q_dd, L,
     }
     if(hessian){
       message('Calculating Hessian and variance-covariance matrices...')  
-      H <- numDeriv::hessian(mmpp_ll, opt$par, data_list=data_list)
+      H <- numDeriv::hessian(ctmc_n2ll, opt$par, data_list=data_list)
       V <- 2*solve(H)
     } else{
       V <- NULL
@@ -96,91 +103,15 @@ fit_ctmc <- function(Q_dd, L,
   } else{
     hessian <- FALSE
     V <- NULL
-    opt <- list(par=start, objective=mmpp_ll(start, data_list))
+    opt <- list(par=start, objective=ctmc_n2ll(start, data_list))
   }
   
   if(debug==3) browser()
   
   ### Get real lambda values
   par <- opt$par
-  real <- get_reals(par, V, data_list, ddl, model_parameters)
-  # X_l <- data_list$X_l
-  # lll <- 1:ncol(X_l)
-  # beta_l <- opt$par[lll]
-  # if(hessian) V_l <- V[lll,lll]
-  # l_vals <- exp(X_l %*% beta_l)
-  # # L <- load_L(data_list$period_l, data_list$cell_l, data_list$idx_l, 
-  # #                        data_list$fix_l, l_vals, data_list$ns, data_list$np)
-  # vars_l <- unique(
-  #   unique(c(
-  #     c('cell', 'cellx', 'period', 'fix'), 
-  #     all.vars(model_parameters$lambda$form)
-  #   ))
-  # )
-  # df_l <- ddl$lambda[,vars_l]
-  # df_l$real <- l_vals[data_list$idx_l+1]
-  # df_l$real <- ifelse(is.na(df_l$real), df_l$fix, df_l$real)
-  # if(hessian){
-  #   xbVbx_l <- X_l %*% V_l %*% t(X_l)
-  #   se_real_l <- as.vector(l_vals) * sqrt(diag(xbVbx_l)) 
-  #   ci_lower_l <- exp(X_l %*% beta_l - 1.96*se_real_l)
-  #   ci_upper_l <- exp(X_l %*% beta_l + 1.96*se_real_l)
-  #   df_l$se_real <- se_real_l[data_list$idx_l+1]
-  #   df_l$se_real <- ifelse(is.na(df_l$se_real) & !is.na(df_l$fix), 0, df_l$se_real)
-  #   df_l$ci_lower <- ci_lower_l[data_list$idx_l+1]
-  #   df_l$ci_upper <- ci_upper_l[data_list$idx_l+1]
-  # }
-  # df_l$prob_det <- ppois(0, df_l$real, lower.tail=FALSE)
-  # if(hessian){
-  #   df_l$ci_det_prob_lower <- ppois(0, df_l$ci_lower, lower.tail=FALSE)
-  #   df_l$ci_det_prob_upper <- ppois(0, df_l$ci_upper, lower.tail=FALSE)
-  # }
-  # df_l <- dplyr::distinct(df_l)
-  
-  ### Get beta lambda values
-  beta <- get_betas(par, V, data_list)
-  # l_nms <- colnames(X_l)
-  # if(hessian){
-  #   df_beta_l <- data.frame(parameter = l_nms, est=beta_l, se_beta=diag(V_l))
-  # } else{
-  #   df_beta_l <- data.frame(parameter = l_nms, est=beta_l)
-  # }
-  # 
-  # ### Get real Q  values
-  # X_q <- data_list$X_q
-  # qqq <- (ncol(X_l)+1):(ncol(X_l)+ncol(X_q))
-  # beta_q <- opt$par[qqq]
-  # if(hessian) V_q <- V[qqq,qqq]
-  # from_to_q <- t(cbind(data_list$from, data_list$to))
-  # q_vals <- exp(X_q %*% beta_q)
-  # q_nms <- colnames(X_q)
-  # # Q <- load_Q(from_to_q, data_list$idx_q, q_vals, data_list$ns)
-  # vars_q <- all.vars(model_parameters$q$form)
-  # df_q <- ddl$q[,vars_q]
-  # df_q$real <- q_vals[data_list$idx_q+1]
-  # if(hessian){
-  #   xbVbx_q <- X_q %*% V_q %*% t(X_q)
-  #   se_real_q <- as.vector(q_vals) * sqrt(diag(xbVbx_q)) 
-  #   df_q$se_real <- se_real_q[data_list$idx_q+1]
-  #   ci_lower_q <- exp(X_q %*% beta_q - 1.96*se_real_q)
-  #   ci_upper_q <- exp(X_q %*% beta_q + 1.96*se_real_q)
-  #   df_q$ci_lower <- ci_lower_q[data_list$idx_q+1]
-  #   df_q$ci_upper <- ci_upper_q[data_list$idx_q+1]
-  # }
-  # df_q <- dplyr::distinct(df_q)
-  # 
-  # ### Get beta Q values
-  # q_nms <- colnames(X_q)
-  # if(hessian){
-  #   df_beta_q <- data.frame(parameter = q_nms, est=beta_q, se_beta=diag(V_q))
-  # } else{
-  #   df_beta_q <- data.frame(parameter = q_nms, est=beta_q)
-  # }
-  
-  ####
-  # statd <- eigen(t(Q))$vectors[,78] /sum(eigen(t(Q))$vectors[,78])
-  # zones$ppp <- statd
-  # mapview::mapview(zones, zcol='ppp')
+  # real <- get_reals(par, V, data_list, ddl, model_parameters)
+  # beta <- get_betas(par, V, data_list)
   
   if(!hessian) V <- NULL
   
@@ -190,18 +121,10 @@ fit_ctmc <- function(Q_dd, L,
     vcov = V,
     log_lik = -0.5*opt$value,
     aic = opt$value + 2*length(par),
-    results = list(
-      # beta = list(
-      #   lambda = df_beta_l,
-      #   q = df_beta_q
-      # ),
-      beta = beta,
-      real = real
-      #   real = list(
-      #     lambda = df_l,
-      #     q = df_q
-      #   )
-    ),
+    # results = list(
+    #   beta = beta,
+    #   real = real
+    # ),
     opt = opt,
     start=start,
     data_list=data_list

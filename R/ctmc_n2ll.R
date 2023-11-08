@@ -5,15 +5,17 @@
 #' @author Devin S. Johnson
 #' @export
 ctmc_n2ll <- function(par, data_list, ...){
-
-n2ll <- ctmc_arma(
-  Q = , 
-  delta = , 
-  L = , 
-  dt = ,
+  
+  Q <- load_rate_mat()
+  
+  n2ll <- ctmc_arma(
+    Q = , 
+    delta = , 
+    L = , 
+    dt = ,
   )$n2ll
-
-return(n2ll)
+  
+  return(n2ll)
 }
 
 

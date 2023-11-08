@@ -2,7 +2,7 @@
 % Please edit documentation in R/telem_to_ras.R
 \name{telem_to_ras}
 \alias{telem_to_ras}
-\title{Convert {ctmm} telemtry data object to a {terra} \code{SpatRaster} stack}
+\title{Convert {ctmm} telemetry data object to a {terra} \code{SpatRaster} stack}
 \usage{
 telem_to_ras(data, ras, return_type = "sparse", max_err = NULL, trunc = 1e-08)
 }
@@ -20,10 +20,10 @@ likelihood surfaces will be \code{0} for those cells.}
 4 times the maximum error standard deviation as determined by the UERE and HDOP
 of the telemetry data.}
 
-\item{trunc}{The smallest probability value that is considered to be > 0. Deafults to 1.0e-8.}
+\item{trunc}{The smallest probability value that is considered to be > 0. Defaults to 1.0e-8.}
 }
 \description{
-Convert {ctmm} telemtry data object to a {terra} \code{SpatRaster} stack
+Convert {ctmm} telemetry data object to a {terra} \code{SpatRaster} stack
 }
 \details{
 This function takes the HDOP information in the \code{telemetry} object to

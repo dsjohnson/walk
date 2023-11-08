@@ -11,30 +11,50 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// v_exp_M
-arma::mat v_exp_M(const arma::mat& v, const arma::sp_mat& M, const double& prec);
-RcppExport SEXP _walk_v_exp_M(SEXP vSEXP, SEXP MSEXP, SEXP precSEXP) {
+// ctmc_n2ll_arma
+Rcpp::List ctmc_n2ll_arma(const arma::vec& id, const arma::vec& dt, const arma::sp_mat& L, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& delta, const bool& row_sweep);
+RcppExport SEXP _walk_ctmc_n2ll_arma(SEXP idSEXP, SEXP dtSEXP, SEXP LSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP deltaSEXP, SEXP row_sweepSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type v(vSEXP);
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type M(MSEXP);
-    Rcpp::traits::input_parameter< const double& >::type prec(precSEXP);
-    rcpp_result_gen = Rcpp::wrap(v_exp_M(v, M, prec));
+    Rcpp::traits::input_parameter< const arma::vec& >::type id(idSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type dt(dtSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type L(LSEXP);
+    Rcpp::traits::input_parameter< const int& >::type ns(nsSEXP);
+    Rcpp::traits::input_parameter< const arma::umat& >::type from_to(from_toSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q_r(Xb_q_rSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q_m(Xb_q_mSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type row_sweep(row_sweepSEXP);
+    rcpp_result_gen = Rcpp::wrap(ctmc_n2ll_arma(id, dt, L, ns, from_to, Xb_q_r, Xb_q_m, delta, row_sweep));
     return rcpp_result_gen;
 END_RCPP
 }
-// ctmc_n2ll_arma
-Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& Q, const arma::vec& delta, const arma::sp_mat& L, const arma::vec dt);
-RcppExport SEXP _walk_ctmc_n2ll_arma(SEXP QSEXP, SEXP deltaSEXP, SEXP LSEXP, SEXP dtSEXP) {
+// phi_exp_lnG
+arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat& lnG, const double& prec);
+RcppExport SEXP _walk_phi_exp_lnG(SEXP phiSEXP, SEXP lnGSEXP, SEXP precSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type Q(QSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type delta(deltaSEXP);
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type L(LSEXP);
-    Rcpp::traits::input_parameter< const arma::vec >::type dt(dtSEXP);
-    rcpp_result_gen = Rcpp::wrap(ctmc_n2ll_arma(Q, delta, L, dt));
+    Rcpp::traits::input_parameter< const arma::mat& >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type lnG(lnGSEXP);
+    Rcpp::traits::input_parameter< const double& >::type prec(precSEXP);
+    rcpp_result_gen = Rcpp::wrap(phi_exp_lnG(phi, lnG, prec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// load_Q
+arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const bool& norm);
+RcppExport SEXP _walk_load_Q(SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP nsSEXP, SEXP normSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::umat& >::type from_to(from_toSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q_r(Xb_q_rSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q_m(Xb_q_mSEXP);
+    Rcpp::traits::input_parameter< const int& >::type ns(nsSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type norm(normSEXP);
+    rcpp_result_gen = Rcpp::wrap(load_Q(from_to, Xb_q_r, Xb_q_m, ns, norm));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -56,8 +76,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_walk_v_exp_M", (DL_FUNC) &_walk_v_exp_M, 3},
-    {"_walk_ctmc_n2ll_arma", (DL_FUNC) &_walk_ctmc_n2ll_arma, 4},
+    {"_walk_ctmc_n2ll_arma", (DL_FUNC) &_walk_ctmc_n2ll_arma, 9},
+    {"_walk_phi_exp_lnG", (DL_FUNC) &_walk_phi_exp_lnG, 3},
+    {"_walk_load_Q", (DL_FUNC) &_walk_load_Q, 5},
     {"_walk_my_test", (DL_FUNC) &_walk_my_test, 6},
     {NULL, NULL, 0}
 };

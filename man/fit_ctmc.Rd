@@ -6,9 +6,8 @@
 \usage{
 fit_ctmc(
   Q_dd,
-  L,
-  model_parameters = list(Q = list(res_form = ~1, move_form = ~1, separable = TRUE), L =
-    NULL),
+  Lik_mat,
+  model_parameters = list(Q = list(q_r = ~1, q_m = ~1, separable = TRUE), L = NULL),
   hessian = TRUE,
   start = NULL,
   method = "nlminb",
@@ -18,13 +17,12 @@ fit_ctmc(
 )
 }
 \arguments{
-\item{Q_dd}{Design data produced by the function \code{\link{sparse_Q_df}}.}
+\item{Q_dd}{Design data list produced by the function \code{\link{make_Q_data}}.}
 
-\item{model_parameters}{Model formula for the detection and movement portions
-of the MMPP model. Must be of the form, e.g.,
-\code{list(lambda=list(form=~1, offset=NULL), q=list(form=~1, offset=~log(1.num_neigh)))}. For the
-\code{q} model you must use \code{offset=0} to not have one. If it is left off, \code{offset=~log(1.num_neigh)))}
-will be used.}
+\item{Lik_mat}{Sparse matrix where each row is the likelihood surface for the corresponding location observation.x}
+
+\item{model_parameters}{Model formula for the residency and movement portions of the model, e.g.,
+\code{list(Q = list(q_r=~1, q_m=~1, separable=TRUE), L = NULL)}.}
 
 \item{hessian}{Logical. Should the Hessian matrix be calculated to obtain the parameter
 variance-covariance matrix.}
@@ -41,11 +39,22 @@ package developers.}
 
 \item{...}{Additional arguments passed to the optimization function
 \code{\link[optimx]{optimr}} from the \code{\link[optimx]{optimx-package}}.}
-
-\item{Lik_mat}{Sparse matrix}
 }
 \description{
 Fit CTMC movement model
+}
+\details{
+The \code{separable = TRUE} element of the \code{Q} list for \code{model.parameters} indicates that the
+separable parameteriztion of Hewitt et al. (2023) will be used. If set to \code{separable = FALSE}
+the traditional loglinear formulation of Johnson et al. (2021) and Hanks et al. (2015) will be used. If  \code{separable = FALSE} the
+\code{q_r} formula is ignored.
+}
+\references{
+Hanks, E. M., Hooten, M. B., and Alldredge, M. W. (2015) Continuous-time discrete-space models for animal movement. Annals of Applied Statistics. 9:145-165.
+
+Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
+
+Johnson, D. S., Pelland, N. A., and Sterling, J. T. (2021) A Continuous-Time Semi-Markov Model for Animal Movement in a Dynamic Environment. The Annals of Applied Statistics, 15:797-812.
 }
 \author{
 Devin S. Johnson

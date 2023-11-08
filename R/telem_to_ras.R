@@ -1,5 +1,5 @@
 
-#' @title Convert {ctmm} telemtry data object to a {terra} `SpatRaster` stack
+#' @title Convert {ctmm} telemetry data object to a {terra} `SpatRaster` stack
 #' @param data A `telemetry` object from the {ctmm} package
 #' @param ras A `\link[terra]{SpatRaster}` stack of covariates that will be used in CTMC 
 #' movement modeling. Cells with `NA` values will be considered areas to the animal cannot travel, i.e., 
@@ -9,7 +9,7 @@
 #' @param max_err The maximum error in meters. If unspecified it will be set to
 #' 4 times the maximum error standard deviation as determined by the UERE and HDOP
 #' of the telemetry data.
-#' @param trunc The smallest probability value that is considered to be > 0. Deafults to 1.0e-8.
+#' @param trunc The smallest probability value that is considered to be > 0. Defaults to 1.0e-8.
 #' @details This function takes the HDOP information in the `telemetry` object to 
 #' produce a `SpatRaster` likelihood surface over the `SpatRaster` defined by 
 #' the `raster` argument for each location. This can then be passed to 

@@ -2,7 +2,7 @@
 ### Make some testing data
 ###~~~~~~~~~~~~~~~~~~~~~~~
 source("/Users/devin.johnson/research/projects/r_packages/walk/testing/functions/make_test_data.R")
-source("/Users/devin.johnson/research/projects/r_packages/walk/testing/functions/sparse_Q_df_test.R")
+source("/Users/devin.johnson/research/projects/r_packages/walk/testing/functions/make_Q_data_test.R")
 
 library(ctmm)
 data(pelican)
@@ -15,7 +15,7 @@ L <- walk::telem_to_ras(data, ras)
 model_parameters = list(
   Q = list(
     r_form=~r_cov2, 
-    m_form=~r_x+m_cov2_grad, separable=TRUE
+    m_form=~m_x+m_y+m_cov2_grad, separable=TRUE
     ),
   L = NULL
 )
@@ -23,4 +23,5 @@ model_parameters = list(
 Xr <- model.matrix(model_parameters$Q$r_form, Q_dd)
 Xm <- model.matrix(model_parameters$Q$m_form, Q_dd)
 Xm <- Xm[,mcheck_cols(Xm),drop=FALSE]
+separable=TRUE
 
