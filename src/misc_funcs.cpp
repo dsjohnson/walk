@@ -16,7 +16,6 @@ arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const doub
   return out;
 }
 
-
 // [[Rcpp::export]]
 arma::sp_mat load_Q(const arma::umat& from_to,
                     const arma::vec& Xb_q_r, const arma::vec& Xb_q_m,
@@ -32,29 +31,3 @@ arma::sp_mat load_Q(const arma::umat& from_to,
   arma::sp_mat Q = Qr * Qm;
   return Q;
 }
-
-
-// // [[Rcpp::export]]
-// arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& q_vals,
-//                     const int& ns){
-//   arma::sp_mat Q(from_to, q_vals, ns, ns);
-//   arma::colvec row_sums = Q * ones(ns);
-//   Q.diag() = -1.0*row_sums;
-//   return Q;
-// }
-
-// // [[Rcpp::export]]
-// arma::sp_mat load_Q_hp(const arma::umat& from_to, const arma::vec& pi_vals, 
-//                        const arma::vec& q_vals, const int& ns){
-//   int n = from_to.n_cols;
-//   arma::sp_mat Qr(ns,ns);
-//   arma::vec qvals_m(n);
-//   for(int i=0; i<ns; i++){Qr(i,i) = exp(off_q(i) + Xb_q_r(idx_q_r(i)));}
-//   for(int i=0; i<n; i++){qvals_m(i) = exp(Xb_q_m(idx_q_m(i)));}
-//   arma::sp_mat Qm(from_to, qvals_m, ns, ns);
-//   Qm = normalise(Qm, 1, 1);
-//   arma::sp_mat Q = Qr * Qm;
-//   Q.diag() = -1.0*Qr.diag();
-//   return Q;
-// }
-

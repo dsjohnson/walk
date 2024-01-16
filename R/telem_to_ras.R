@@ -108,6 +108,7 @@ telem_to_ras <- function(data, ras, return_type="sparse", max_err=NULL, trunc=1.
 }
 
 
+#' @importFrom terra res
 get_corner <- function(cells, r, which){
   sz <- res(r)
   xy <- xyFromCell(r, cells)

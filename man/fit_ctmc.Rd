@@ -2,12 +2,13 @@
 % Please edit documentation in R/fit_ctmc.R
 \name{fit_ctmc}
 \alias{fit_ctmc}
-\title{Fit CTMC movement model}
+\title{Fit CTMC movement model to telemetry data}
 \usage{
 fit_ctmc(
-  Q_dd,
-  Lik_mat,
-  model_parameters = list(Q = list(q_r = ~1, q_m = ~1, separable = TRUE), L = NULL),
+  L,
+  ddl,
+  model_parameters = list(q_r = ~1, q_m = ~1),
+  pen_fun = NULL,
   hessian = TRUE,
   start = NULL,
   method = "nlminb",
@@ -17,18 +18,20 @@ fit_ctmc(
 )
 }
 \arguments{
-\item{Q_dd}{Design data list produced by the function \code{\link{make_Q_data}}.}
+\item{L}{A likelihood surface matrix}
 
-\item{Lik_mat}{Sparse matrix where each row is the likelihood surface for the corresponding location observation.x}
+\item{ddl}{A design data list produced by the function \code{\link{make_design_data}}.}
 
-\item{model_parameters}{Model formula for the residency and movement portions of the model, e.g.,
-\code{list(Q = list(q_r=~1, q_m=~1, separable=TRUE), L = NULL)}.}
+\item{model_parameters}{Model formula for the detection and movement portions
+of the MMPP model.}
+
+\item{pen_fun}{An optional penalty function. Should be on the scale of a log-prior distribution.}
 
 \item{hessian}{Logical. Should the Hessian matrix be calculated to obtain the parameter
 variance-covariance matrix.}
 
 \item{start}{Optional starting values for the parameter must be a list of the
-form \code{list(beta_l=c(), beta_q=c())}.}
+form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.}
 
 \item{method}{Optimization method. See \code{\link[optimx]{optimr}}}
 
@@ -41,20 +44,16 @@ package developers.}
 \code{\link[optimx]{optimr}} from the \code{\link[optimx]{optimx-package}}.}
 }
 \description{
-Fit CTMC movement model
+Fit CTMC movement model to telemetry data
 }
 \details{
-The \code{separable = TRUE} element of the \code{Q} list for \code{model.parameters} indicates that the
-separable parameteriztion of Hewitt et al. (2023) will be used. If set to \code{separable = FALSE}
-the traditional loglinear formulation of Johnson et al. (2021) and Hanks et al. (2015) will be used. If  \code{separable = FALSE} the
-\code{q_r} formula is ignored.
+Two model forms are available \code{list(lambda=list(form=~1, offset=NULL), q=list(form=~1, offset=~log(1.num_neigh)))}. For the
+\code{q} model you must use \code{offset=0} to not have one. If it is left off, \code{offset=~log(1.num_neigh)))}
+will be used. To use the movement rate form of Hewitt et al. (2023), one must use, e.g.,
+\code{q = list(res_form = ~from_var, mov_form=~to_var, offset=...)}, where \code{from_var} is a variable
 }
 \references{
-Hanks, E. M., Hooten, M. B., and Alldredge, M. W. (2015) Continuous-time discrete-space models for animal movement. Annals of Applied Statistics. 9:145-165.
-
 Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
-
-Johnson, D. S., Pelland, N. A., and Sterling, J. T. (2021) A Continuous-Time Semi-Markov Model for Animal Movement in a Dynamic Environment. The Annals of Applied Statistics, 15:797-812.
 }
 \author{
 Devin S. Johnson

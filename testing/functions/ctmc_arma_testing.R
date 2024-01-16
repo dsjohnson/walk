@@ -2,7 +2,7 @@
 ### Make some testing data
 ###~~~~~~~~~~~~~~~~~~~~~~~
 source("/Users/devin.johnson/research/projects/r_packages/walk/testing/functions/make_test_data.R")
-source("/Users/devin.johnson/research/projects/r_packages/walk/testing/functions/make_Q_data_test.R")
+# source("/Users/devin.johnson/research/projects/r_packages/walk/testing/functions/make_Q_data_test.R")
 
 library(ctmm)
 data(pelican)
@@ -11,17 +11,12 @@ data$COV.x.x <- ifelse(data$COV.x.x==Inf, 20^2, data$COV.x.x)
 data$COV.y.y <- ifelse(data$COV.y.y==Inf, 20^2, data$COV.y.y)
 L <- walk::telem_to_ras(data, ras)
 
-### Function bits
-model_parameters = list(
-  Q = list(
-    r_form=~r_cov2, 
-    m_form=~m_x+m_y+m_cov2_grad, separable=TRUE
-    ),
-  L = NULL
-)
+r2 <- ras
+values(r2) <- values(r2) + rnorm(ncell(ras)) + 5*(1:ncell(ras))/ncell(ras)
+ras <- c(ras, r2)
+names(ras) <- c("cov1","cov2")
 
-Xr <- model.matrix(model_parameters$Q$r_form, Q_dd)
-Xm <- model.matrix(model_parameters$Q$m_form, Q_dd)
-Xm <- Xm[,mcheck_cols(Xm),drop=FALSE]
-separable=TRUE
+ddl <- make_design_data(ras, grad="cov2", rast_mask = ras[[1]])
+
+
 

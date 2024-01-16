@@ -11,7 +11,7 @@ values(r2) <- values(r2) + rnorm(ncell(ras)) + 5*(1:ncell(ras))/ncell(ras)
 ras <- c(ras, r2)
 names(ras) <- c("cov1","cov2")
 
-Q_dd <- make_Q_data(ras, grad="cov2")
-inherits(Q_dd, "Qdf")
+ddl <- make_design_data(ras, grad="cov2", rast_mask = ras[[1]])
+inherits(ddl, "Qdf")
 
 

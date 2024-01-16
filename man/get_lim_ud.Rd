@@ -4,10 +4,12 @@
 \alias{get_lim_ud}
 \title{Get the limiting utilization distribution of the CTMC movement process}
 \usage{
-get_lim_ud(fit)
+get_lim_ud(fit = NULL, Q = NULL)
 }
 \arguments{
-\item{fit}{A ctmc fitted model object from \code{\link[ctmc_arma]{ctmc_arma}}.}
+\item{fit}{A moveMMPP fitted model object from \code{\link[moveMMPP]{fit_mmpp_dir}}.}
+
+\item{Q}{A movement rate matrix. If provided, will ignore the \code{fit} argument.}
 }
 \description{
 Get the limiting utilization distribution of the CTMC movement process

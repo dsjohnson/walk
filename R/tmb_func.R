@@ -1,4 +1,5 @@
-
+#' @importFrom stats nlminb 
+#' @importFrom TMB sdreport
 fit_norm <- function(x){
   data_list <- list(model="NormalNLL", x=x)
   obj <- TMB::MakeADFun(data = data_list,
