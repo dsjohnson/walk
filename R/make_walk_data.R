@@ -1,4 +1,5 @@
 #' @title Produce design data for use in fitting MMPP movement models
+#' @param proc_data ---.
 #' @param cell_data ---.
 #' @param grad ---.
 #' @param rast_mask Raster mask for inaccessible cells when \code{cell_data} is of type \code{SpatRaster} from the \code{terra} package. This is ignored
@@ -7,9 +8,10 @@
 #' @param debug Debugging level: 1-3 mainly for package developers.
 #' @param ... Ignored arguments.
 #' @import dplyr 
-#' @importFrom units set_units
+#' @importFrom Matrix rowSums
 #' @export
-make_design_data <- function(cell_data, grad=NULL, rast_mask=NULL, directions="rook", debug=0,...){
+make_walk_data <- function(proc_data, cell_data, grad=NULL, rast_mask=NULL, 
+                           directions="rook", debug=0,...){
   
   cells <- obs <- timestamp <- quad <- NULL
   
@@ -24,11 +26,15 @@ make_design_data <- function(cell_data, grad=NULL, rast_mask=NULL, directions="r
   } else if(inherits(cell_data, "sf")){
     q_list <- make_q_data_sf(cell_data, cell_name)
   }
-  
-  class(q_list) <- c(class(q_list), "Qdf")
+  out <- list()
+  out$L <- proc_data$L[,q_list$q_r$cell]
+  if(min(Matrix::rowSums(out$L))==0) warning("Some observations have likelihood values of 0 in all ras cells after 'rast_mask' cells are removed!")
+  out$times <- proc_data$times
+  out$q_r <- q_list$q_r
+  out$q_m <- q_list$q_m
+  class(out) <- c(class(out), "walk_ddl")
   if(debug==3) browser()
-  return(q_list)
-  
+  return(out)
 }
 
 

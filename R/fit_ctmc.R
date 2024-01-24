@@ -1,11 +1,12 @@
 #' @title Fit CTMC movement model to telemetry data
-#' @param L A likelihood surface matrix 
-#' @param ddl A design data list produced by the function \code{\link{make_design_data}}.
+#' @param walk_data A design data list produced by the function \code{\link{make_walk_data}}.
 #' @param model_parameters Model formula for the detection and movement portions
 #' of the MMPP model. 
 #' @param pen_fun An optional penalty function. Should be on the scale of a log-prior distribution.
 #' @param hessian Logical. Should the Hessian matrix be calculated to obtain the parameter
 #' variance-covariance matrix.
+#' @param get_reals Calculate real values for expected residency, cell transition probabilities, and 
+#' outlier proportion for observations.  
 #' @param start Optional starting values for the parameter must be a list of the 
 #' form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.
 #' @param method Optimization method. See \code{\link[optimx]{optimr}}
@@ -22,68 +23,71 @@
 #' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
 #' @author Devin S. Johnson
 #' @import optimx dplyr numDeriv
-#' @importFrom stats ppois
+#' @importFrom stats ppois qlogis
 #' @export
-fit_ctmc <- function(L, ddl, 
-                     model_parameters = list(q_r = ~1, q_m = ~1
-                     ), pen_fun = NULL,
-                     hessian=TRUE, start=NULL, method="nlminb", fit=TRUE, 
-                     debug=0, ...){
-  
-  cell <- cellx <- NULL
+fit_ctmc <- function(walk_data, 
+                     model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta=NULL), 
+                     pen_fun = NULL, hessian=TRUE, get_reals=FALSE, start=NULL, method="nlminb", 
+                     fit=TRUE, debug=0, ...){
   
   if(debug==1) browser()
+  # cell_idx_df <- select(walk_data$q_r, cell, cellx) %>% distinct()
+  # data <- data %>% left_join(cell_idx_df, by="cell")
   
-  cell_idx_df <- select(ddl$q_r, cell, cellx) %>% distinct()
-  data <- data %>% left_join(cell_idx_df, by="cell")
+  X_q_r <- dm_q_r(model_parameters$q_r, walk_data)
+  X_q_m <- dm_q_m(model_parameters$q_m, walk_data)
   
-  dmq_r <- dm_q_r(model_parameters$q_r, ddl)
-  dmq_m <- dm_q_m(model_parameters$q_m, ddl)
+  par_map <- list(beta_q_r = 1:ncol(X_q_r))
+  if(ncol(X_q_m)!=0) par_map$beta_q_m <- c(1:ncol(X_q_m)) + ncol(X_q_r)
   
-  par_map = list(
-    beta_q_r = 1:ncol(dmq_r$X_q_r)
-  )
-  if(ncol(dmq_m$X_q_m)!=0) par_map$beta_q_m = c(1:ncol(dmq_m$X_q_m)) + ncol(dmq_r$X_q_r)
+  if(model_parameters$p){
+    par_map$logit_p <- ncol(X_q_m) + ncol(X_q_r) + 1
+  }
 
+  if(is.null(model_parameters$delta)){
+    delta <- walk_data$L[1,]
+  }
+  delta <- delta/sum(delta)
   
   data_list <- list(
-    
-    N = as.integer(nrow(data)),
-    ns = as.integer(length(unique(ddl$q_r$cellx))),
-    dt = data$delta,
-    cell = as.integer(data$cellx-1),
+    N = nrow(walk_data$L),
+    ns = nrow(walk_data$q_r),
+    dt = walk_data$times$dt,
+    L = walk_data$L,
+    delta = delta,
     ### Q
-    from = as.integer(ddl$q_m$from_cellx-1),
-    to = as.integer(ddl$q_m$cellx-1),
-    X_q_r = dmq_r$X_q_r,
-    X_q_m = dmq_m$X_q_m,
-    par_map = par_map
+    from = as.integer(walk_data$q_m$from_cellx-1),
+    to = as.integer(walk_data$q_m$cellx-1),
+    X_q_r = X_q_r,
+    X_q_m = X_q_m,
+    par_map = par_map,
+    cell_map = walk_data$q_r[,c("cell","cellx")]
   )
   
-  if(is.null(start)){
-    par_list <- list(
-      beta_q_r = rep(0, ncol(dmq_r$X_q_r)),
-      beta_q_m = rep(0, ncol(dmq_m$X_q_m))
-    )
-  } else{
-    par_list=start
-  }
   
-  start <- c(par_list$beta_q_r, par_list$beta_q_m)
+  if(is.null(start$beta_q_r)) start$beta_q_r <- rep(0, ncol(X_q_r))
+  if(is.null(start$beta_q_m)) start$beta_q_m <- rep(0, ncol(X_q_m))
+  if(is.null(start$logit_p) & model_parameters$p) start$logit_p <- qlogis(0.05)
+  
+  par_start <- c(start$beta_q_r, start$beta_q_m, start$logit_p)
+  
+  # ctmc_n2ll(par, data_list)
   
   if(is.null(pen_fun)){
-    obj_fun <- function(par, data_list, debug=0, ...){ctmc_n2ll(par, data_list, debug=0, ...)}
+    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, debug=0, ...)}
   } else{
-    obj_fun <- function(par, data_list, debug=0, ...){ctmc_n2ll(par, data_list, debug=0, ...) - 2*pen_fun(par)}
+    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, debug=0, ...) - 2*pen_fun(par)}
   }
   
   if(debug==2) browser()
+  
+  # opt <- optimx::optimr(par=par_start, fn=obj_fun, method=method, data_list=data_list, control = list(trace=10, rel.tol=1.0e-3))
   
   
   if(fit){
     message('Optimizing likelihood...')  
     if(debug==2) browser()
-    opt <- optimx::optimr(par=start, fn=obj_fun, method=method, data_list=data_list, ...)
+    opt <- optimx::optimr(par=par_start, fn=obj_fun, method=method, data_list=data_list, ...)
     
     if(opt$convergence!=0){
       message("There was a problem with optimization... See output 'optimx' object.")
@@ -107,13 +111,14 @@ fit_ctmc <- function(L, ddl,
   
   if(debug==3) browser()
   
-  ### Get real lambda values
   par <- as.vector(opt$par)
-  # real <- get_reals(par, V, data_list, ddl, model_parameters)
-  
-  ### Get beta lambda values
   beta <- get_betas(par, V, data_list)
-  reals <- get_reals(par, V, data_list, ddl, model_parameters)
+  if(get_reals){
+    reals <- get_reals(par, V, data_list, walk_data, model_parameters)
+  } else{
+    reals <- NULL
+  }
+  
   
   if(!hessian) V <- NULL
   

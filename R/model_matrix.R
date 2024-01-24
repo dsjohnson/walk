@@ -34,7 +34,7 @@ dm_q_m <- function(formula, ddl){
   # mX <- with(mX, mX[order(from_cellx, to_cellx),])
   # lookup <- mX[,c('from_cellx','to_cellx','idx_q')]
   # return(list(X_q = uX, idx_q=lookup, off_q=offset))
-  return(list(X_q_m = X))
+  return(X)
 }
 
 #' @rdname dm_matrix
@@ -53,5 +53,5 @@ dm_q_r <- function(formula, ddl){
   # mX <- with(mX, mX[order(from_cellx, to_cellx),])
   # lookup <- mX[,c('from_cellx','to_cellx','idx_q')]
   # return(list(X_q = uX, idx_q=lookup, off_q=offset))
-  return(list(X_q_r = X))
+  return(X)
 }

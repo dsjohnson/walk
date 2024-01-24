@@ -4,7 +4,7 @@
 \alias{get_reals}
 \title{Derive real parameter values}
 \usage{
-get_reals(par, V = NULL, data_list, ddl, model_parameters)
+get_reals(par, V = NULL, data_list, walk_data, model_parameters)
 }
 \arguments{
 \item{par}{Model estimated parameters}
@@ -14,7 +14,7 @@ no standard errors will be provided for the real parameter estimates}
 
 \item{data_list}{The data list from a fitted model object}
 
-\item{ddl}{The design data list fed into a \code{fit_mmpp} function.}
+\item{walk_data}{The design data list fed into a \code{fit_mmpp} function.}
 
 \item{model_parameters}{The model formula for the fitted model.}
 }

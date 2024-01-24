@@ -5,11 +5,11 @@
 \title{Fit CTMC movement model to telemetry data}
 \usage{
 fit_ctmc(
-  L,
-  ddl,
-  model_parameters = list(q_r = ~1, q_m = ~1),
+  walk_data,
+  model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta = NULL),
   pen_fun = NULL,
   hessian = TRUE,
+  get_reals = FALSE,
   start = NULL,
   method = "nlminb",
   fit = TRUE,
@@ -18,9 +18,7 @@ fit_ctmc(
 )
 }
 \arguments{
-\item{L}{A likelihood surface matrix}
-
-\item{ddl}{A design data list produced by the function \code{\link{make_design_data}}.}
+\item{walk_data}{A design data list produced by the function \code{\link{make_walk_data}}.}
 
 \item{model_parameters}{Model formula for the detection and movement portions
 of the MMPP model.}
@@ -29,6 +27,9 @@ of the MMPP model.}
 
 \item{hessian}{Logical. Should the Hessian matrix be calculated to obtain the parameter
 variance-covariance matrix.}
+
+\item{get_reals}{Calculate real values for expected residency, cell transition probabilities, and
+outlier proportion for observations.}
 
 \item{start}{Optional starting values for the parameter must be a list of the
 form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.}

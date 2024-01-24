@@ -12,21 +12,21 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // ctmc_n2ll_arma
-Rcpp::List ctmc_n2ll_arma(const arma::vec& id, const arma::vec& dt, const arma::sp_mat& L, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& delta, const bool& row_sweep);
-RcppExport SEXP _walk_ctmc_n2ll_arma(SEXP idSEXP, SEXP dtSEXP, SEXP LSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP deltaSEXP, SEXP row_sweepSEXP) {
+Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L, const arma::vec& dt, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const double& p, const arma::rowvec& delta, const bool& row_sweep);
+RcppExport SEXP _walk_ctmc_n2ll_arma(SEXP LSEXP, SEXP dtSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP pSEXP, SEXP deltaSEXP, SEXP row_sweepSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::vec& >::type id(idSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type dt(dtSEXP);
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type L(LSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type dt(dtSEXP);
     Rcpp::traits::input_parameter< const int& >::type ns(nsSEXP);
     Rcpp::traits::input_parameter< const arma::umat& >::type from_to(from_toSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q_r(Xb_q_rSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q_m(Xb_q_mSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< const double& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type delta(deltaSEXP);
     Rcpp::traits::input_parameter< const bool& >::type row_sweep(row_sweepSEXP);
-    rcpp_result_gen = Rcpp::wrap(ctmc_n2ll_arma(id, dt, L, ns, from_to, Xb_q_r, Xb_q_m, delta, row_sweep));
+    rcpp_result_gen = Rcpp::wrap(ctmc_n2ll_arma(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, row_sweep));
     return rcpp_result_gen;
 END_RCPP
 }

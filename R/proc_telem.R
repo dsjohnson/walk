@@ -1,9 +1,12 @@
 
 #' @title Convert {ctmm} telemetry data object to a {terra} `SpatRaster` stack
 #' @param data A `telemetry` object from the {ctmm} package
-#' @param ras A `\link[terra]{SpatRaster}` stack of covariates that will be used in CTMC 
+#' @param cell_data A `\link[terra]{SpatRaster}` stack of covariates that will be used in CTMC 
 #' movement modeling. Cells with `NA` values will be considered areas to the animal cannot travel, i.e., 
 #' likelihood surfaces will be `0` for those cells.
+#' @param time_units Unit of measurement for numeric conversion of the POSIX timestamps 
+#' in the telemetry data. Defaults to \code{"hours"}. Can specify, e.g., 
+#'  \code{"seconds"} or \code{"days"}
 #' @param return_type Type of object returned. One if `"data.frame"`, `"sparse"` (sparse matrix), 
 #' `"matrix_df"` (matrix form of `"data.frame"`), or `"dense"` (dense matrix).
 #' @param max_err The maximum error in meters. If unspecified it will be set to
@@ -21,11 +24,11 @@
 #' @importFrom ctmm uere
 #' @importFrom methods as
 #' @export
-telem_to_ras <- function(data, ras, return_type="sparse", max_err=NULL, trunc=1.0e-8){
+proc_telem <- function(data, cell_data, time_units="hours", return_type="sparse", max_err=NULL, trunc=1.0e-8){
   # Check arguments
   if(!inherits(data, "telemetry")) stop("'data' must be a ctmm::telemery object!")
-  if(!inherits(ras, "SpatRaster")) stop("'ras' must be a terra::SpatRaster object!")
-  if(is.lonlat(ras)) stop("'ras' must be projected with units in meters.")
+  if(!inherits(cell_data, "SpatRaster")) stop("'cell_data' must be a terra::SpatRaster object!")
+  if(is.lonlat(cell_data)) stop("'cell_data' must be projected with units in meters.")
   
   # Evaluate error covariance
   err_nms <- c("COV.x.x", "COV.x.y", "COV.y.y")
@@ -45,32 +48,32 @@ telem_to_ras <- function(data, ras, return_type="sparse", max_err=NULL, trunc=1.
   }
   
   # Extract error neighborhood and get cells 
-  ras_prj <- crs(ras, proj=TRUE)
+  cell_data_prj <- crs(cell_data, proj=TRUE)
   telem_pts <- terra::vect(cbind(data$longitude, data$latitude), crs="epsg:4326") |>
-    terra::project(ras_prj)
+    terra::project(cell_data_prj)
   if(is.null(max_err)) max_err <- 4*sqrt(pmax(cov_xx,cov_yy))
   t_buf <- terra::buffer(telem_pts, max_err)
-  t_err <- terra::cells(ras, t_buf, touches=TRUE) 
+  t_err <- terra::cells(cell_data, t_buf, touches=TRUE) 
   t_err <- split(t_err[,'cell'], t_err[,'ID'])
   xy <- terra::crds(telem_pts) 
   
   lik_list <- vector("list", nrow(xy))
   out <- NULL
   zero_ind <- FALSE
-  ras_val <- values(ras)
+  cell_data_val <- values(cell_data)
   
   for(i in 1:nrow(xy)){
     # i <- 1
     if(any(!is.finite(t_err[[i]]))) stop("There are error buffered locations completely outside of raster area.")
     sigma <- matrix(c(cov_xx[i], cov_xy[i], cov_xy[i], cov_yy[i]), 2, 2)
     mean <- as.vector(xy[i,])
-    lower <- get_corner(t_err[[i]], ras, "ll")
-    upper <- get_corner(t_err[[i]], ras, "ur")
+    lower <- get_corner(t_err[[i]], cell_data, "ll")
+    upper <- get_corner(t_err[[i]], cell_data, "ur")
     dfi <- cbind(obs=i, cell=t_err[[i]], lik=NA)
     dfi[,'lik'] <- sapply(1:length(t_err[[i]]), 
                           \(j) pmvnorm(lower=lower[j,], upper=upper[j,], mean=mean, sigma=sigma, keepAttr=FALSE)
     )
-    m <- ifelse(is.na(ras_val[t_err[[i]]]), 0, 1)
+    m <- ifelse(is.na(cell_data_val[t_err[[i]]]), 0, 1)
     dfi[,3] <- dfi[,3]*m
     dfi[,3] <- dfi[,3]/sum(dfi[,3])
     dfi[,3] <- ifelse(dfi[,3]<trunc, 0, dfi[,3])
@@ -80,20 +83,26 @@ telem_to_ras <- function(data, ras, return_type="sparse", max_err=NULL, trunc=1.
     out <- rbind(out, dfi)
   }
   
-  if(zero_ind) warning("Some observations have likelihood values of 0 in all ras cells!")
+  if(zero_ind) warning("Some observations have likelihood values of 0 in all 'cell_data' cells!")
+  
+  times <- data.frame(obs=1:nrow(data), timestamp = data$timestamp)
+  dt <- diff(times$timestamp) |> `units<-`(time_units)
+  times <- cbind(times, dt=c(0,dt))
   
   if(return_type=="data.frame"){
-    return(as.data.frame(out))
+    out <- as.data.frame(out)
+    out <- merge(out, times, by="obs")
+    return(out)
   } else if(return_type=="sparse"){
-    M <- Matrix::sparseMatrix(i = out[,'obs'], j = out[,'cell'], x = out[,'lik'], dims = c(nrow(xy), prod(dim(ras)[1:2])))
+    M <- Matrix::sparseMatrix(i = out[,'obs'], j = out[,'cell'], x = out[,'lik'], dims = c(nrow(xy), prod(dim(cell_data)[1:2])))
     M <- as(M, "dgCMatrix")
-    return(M)
+    return(list(L=M, times=times))
   } else if(return_type=="matrix_df"){
     return(out)
   } else if(return_type=="dense"){
-    M <- Matrix::sparseMatrix(i = out[,'obs'], j = out[,'cell'], x = out[,'lik'], dims = c(nrow(xy), prod(dim(ras)[1:2])))
+    M <- Matrix::sparseMatrix(i = out[,'obs'], j = out[,'cell'], x = out[,'lik'], dims = c(nrow(xy), prod(dim(cell_data)[1:2])))
     M <- as.matrix(M)
-    return(M)
+    return(list(L=M, times=times))
   } else{
     warning("Unknown 'return_type' returning 'matrix_df'")
     return(out)

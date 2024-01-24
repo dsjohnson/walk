@@ -14,12 +14,13 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
 
 // Calculate likelihood ///////////////
 // [[Rcpp::export]]
-Rcpp::List ctmc_n2ll_arma(const arma::vec& id, 
-                          const arma::vec& dt, const arma::sp_mat& L, 
+Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L, 
+                          const arma::vec& dt, 
                           const int& ns, 
                           const arma::umat& from_to, 
                           const arma::vec& Xb_q_r, const arma::vec& Xb_q_m,
-                          const arma::vec& delta, 
+                          const double& p,
+                          const arma::rowvec& delta, 
                           const bool& row_sweep=true)
 {
   int N = dt.size();
@@ -33,13 +34,26 @@ Rcpp::List ctmc_n2ll_arma(const arma::vec& id,
   arma::rowvec v(ns);
   arma::rowvec phi = delta;
   arma::sp_mat P(ns,ns);
+  // arma::vec Lt(ns);
   
-  // Start Foward alg loop (index = i)
-  for(int i=0; i<N; i++){
+  // Start Forward alg loop (index = i)
+  for(int i=1; i<N; i++){
       Qt = Q*dt(i);
       v = phi_exp_lnG(phi, Qt);
-      v = v % L.row(i);
+      v = v % ((1-p)*L.row(i)) + (p/ns)*v;
       u = accu(v);
+      // if(u==0){
+        // log_lik_v(i) = log(u);
+        // v = phi_exp_lnG(phi, Qt);
+        // arma::rowvec Lrow;
+        // Lrow = L.row(i);
+        // return Rcpp::List::create(
+        //   Rcpp::Named("i") = i+1,
+        //   Rcpp::Named("log_lik_v") = log_lik_v,
+        //   Rcpp::Named("v") = v,
+        //   Rcpp::Named("Lrow") = Lrow
+        // );
+      // }
       log_lik_v(i) = log(u);
       phi = v/u;
   } // end i

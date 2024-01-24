@@ -20,11 +20,17 @@ get_Q <- function(fit, sparse=TRUE){
 #' @author Devin S. Johnson
 #' @export
 #' @importFrom Matrix t
+#' @importFrom rARPACK eigs
 get_lim_ud <- function(fit=NULL, Q=NULL){
   if(is.null(Q)) Q <- get_Q(fit)
-  eigen_list <- eigen(Matrix::t(Q))
-  idx <- which.min(abs(eigen_list$values))
-  u <- eigen_list$vectors[,idx]
-  u <- u/sum(u)
-  return(u)
+  ud <- rARPACK::eigs(t(Q), 1, "SM")$vectors |> Re()
+  # browser()
+  mx <- max(ud)
+  ud <- ud/mx
+  ud <- zapsmall(ud)
+  ud <- ud/sum(ud)
+  if(!is.null(fit)){
+    ud <- cbind(fit$data_list$cell_map, ud)
+  }
+  return(ud)
 }
