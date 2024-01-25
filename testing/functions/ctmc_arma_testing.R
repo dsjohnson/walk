@@ -20,14 +20,26 @@ pt_data <- walk::proc_telem(telem_data, cell_data)
 walk_data <- make_walk_data(pt_data, cell_data, grad="cov2", rast_mask = ras[[1]])
 
 fit <- fit_ctmc(walk_data,
-         model_parameters = list(q_r = ~1, q_m = ~w_x + w_y + cov2_grad, p = TRUE, delta=NULL), 
+         model_parameters = list(q_r = ~1, q_m = ~w_x + w_y, p = TRUE, delta=NULL), 
          pen_fun = NULL, hessian=TRUE, get_reals=TRUE, 
-         # start=list(beta_q_r = -1.3, beta_q_m=c(0.17,-0.19, 0), logit_p=-3.9), 
+         start=list(beta_q_r = -1.3, beta_q_m=c(0.17,-0.19), logit_p=-3.9),
          method="nlminb", 
-         fit=TRUE, debug=0, control=list(rel.tol=1.0e-8, trace=10) )
+         fit=TRUE, eq_prec = 1.0e-8, debug=0, control=list(rel.tol=1.0e-6, trace=10) )
 
 Q <- get_Q(fit)
 ud <- get_lim_ud(fit)
+cell_data$ud <- 0
+cell_data$ud[ud$cell] <- ud$ud
+
+cell_data <- wrap(cell_data)
+
+save(list=ls(), file="~/research/projects/r_packages/walk/testing/functions/.RData")
+
+st <- lubridate::ceiling_date(walk_data$times$timestamp[1],"12 hours")
+end <- lubridate::floor_date(tail(walk_data$times$timestamp,1),"12 hours")
+aux_timestamp <- seq.POSIXt(st, end, by="12 hours")
+
+pred <- predict_ctmc(fit, walk_data, aux_timestamp)
 
 
 

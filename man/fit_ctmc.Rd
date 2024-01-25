@@ -13,6 +13,7 @@ fit_ctmc(
   start = NULL,
   method = "nlminb",
   fit = TRUE,
+  eq_prec = 1e-08,
   debug = 0,
   ...
 )
@@ -37,6 +38,9 @@ form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.}
 \item{method}{Optimization method. See \code{\link[optimx]{optimr}}}
 
 \item{fit}{Logical. Should the likelihood be optimized?}
+
+\item{eq_prec}{Error rate of matrix exponential calculation. Defaults to \code{1.0e-8}. This is
+a generous value. If the model is running slow, you can try reducing it to, say, \code{1.0e-4}.}
 
 \item{debug}{Integer from 1-4. Opens browser() at various points in the function call. Mostly for
 package developers.}

@@ -14,7 +14,7 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
 
 // Calculate likelihood ///////////////
 // [[Rcpp::export]]
-Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L, 
+Rcpp::List ctmc_predict_arma(const arma::sp_mat& L, 
                           const arma::vec& dt, 
                           const int& ns, 
                           const arma::umat& from_to, 
@@ -22,45 +22,50 @@ Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L,
                           const double& p,
                           const arma::rowvec& delta, 
                           const double& eq_prec = 1.0e-8,
+                          const double& trunc_tol = 1.0e-8,
                           const bool& row_sweep=true)
 {
   int N = dt.size();
-  double u = 0.0;
-  arma::vec log_lik_v(N);
+  // arma::sp_mat Qt(ns,ns);
   arma::sp_mat Q = load_Q(from_to, Xb_q_r, Xb_q_m, ns, row_sweep);
+  
+  // Forward probs
+  arma::mat A(N, ns);
+  A.row(0) = delta;
+  // Backward probs
+  arma::mat B(ns, N);
+  B.col(N-1).ones();
+  
+  // State posterior matrix
+  arma::sp_mat G(N, ns);
 
-  // Start forward loop
   arma::rowvec v(ns);
-  arma::rowvec phi = delta;
-  arma::sp_mat P(ns,ns);
-  // arma::vec Lt(ns);
+  arma::rowvec ab(ns);
   
   // Start Forward alg loop (index = i)
   for(int i=1; i<N; i++){
-      v = phi_exp_lnG(phi, Q*dt(i), eq_prec);
+      v = phi_exp_lnG(A.row(i-1), Q*dt(i), eq_prec);
       v = v % ((1-p)*L.row(i)) + (p/ns)*v;
-      u = accu(v);
-      // if(u==0){
-        // log_lik_v(i) = log(u);
-        // v = phi_exp_lnG(phi, Qt);
-        // arma::rowvec Lrow;
-        // Lrow = L.row(i);
-        // return Rcpp::List::create(
-        //   Rcpp::Named("i") = i+1,
-        //   Rcpp::Named("log_lik_v") = log_lik_v,
-        //   Rcpp::Named("v") = v,
-        //   Rcpp::Named("Lrow") = Lrow
-        // );
-      // }
-      log_lik_v(i) = log(u);
-      phi = v/u;
+      A.row(i) = v/accu(v);
   } // end i
   
-  double n2ll = -2*accu(log_lik_v);
+  G.row(N-1) = A.row(N-1);
+  
+  // Start backward loop (index i)
+  for(int i=N-1; i>0; i--){
+    v = phi_exp_lnG(B.col(i).t(), (Q*dt(i)).t(), eq_prec);
+    v = v % ((1-p)*L.row(i)) + (p/ns)*v;
+    B.col(i-1) = (v/accu(v)).t();
+    ab =  A.row(i-1) % B.col(i-1).t();
+    ab = ab/accu(ab);
+    G.row(i-1) = ab.clean(trunc_tol);
+  } // end i
+  // G = normalise(G, 1, 1);
   
   return Rcpp::List::create(
-    // Rcpp::Named("log_lik_v") = log_lik_v,
-    Rcpp::Named("n2ll") = n2ll
+    Rcpp::Named("local_state_prob") = G,
+    Rcpp::Named("alpha") = A,
+    Rcpp::Named("beta") = B
   );
   
 }

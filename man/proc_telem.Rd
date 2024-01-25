@@ -7,7 +7,7 @@
 proc_telem(
   data,
   cell_data,
-  time_units = "hours",
+  time_unit = "hours",
   return_type = "sparse",
   max_err = NULL,
   trunc = 1e-08
@@ -20,7 +20,7 @@ proc_telem(
 movement modeling. Cells with \code{NA} values will be considered areas to the animal cannot travel, i.e.,
 likelihood surfaces will be \code{0} for those cells.}
 
-\item{time_units}{Unit of measurement for numeric conversion of the POSIX timestamps
+\item{time_unit}{Unit of measurement for numeric conversion of the POSIX timestamps
 in the telemetry data. Defaults to \code{"hours"}. Can specify, e.g.,
 \code{"seconds"} or \code{"days"}}
 

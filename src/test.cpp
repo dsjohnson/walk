@@ -16,6 +16,16 @@ using namespace expQ2;
 //   http://gallery.rcpp.org/
 //
 
+
+//[[Rcpp::export]]
+arma::sp_mat dense_to_sparse(const arma::mat& M, const double& tol=1.0e-8){
+  arma::sp_mat out(M);
+  out.clean(tol);
+  return(out);
+}
+
+
+
 // [[Rcpp::export]]
 arma::mat my_test(const arma::mat v, SEXP Q, double prec, bool renorm=true, bool t2=true, bool checks=true) {
   arma::mat out;

@@ -39,6 +39,7 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     Xb_q_m = Xb_q_m,
     p = p,
     delta = matrix(data_list$delta, nrow=1),
+    eq_prec = data_list$eq_prec
   )$n2ll
   
   # ll <- ctmc_n2ll_arma(

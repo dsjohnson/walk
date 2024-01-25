@@ -11,6 +11,8 @@
 #' form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.
 #' @param method Optimization method. See \code{\link[optimx]{optimr}}
 #' @param fit Logical. Should the likelihood be optimized?
+#' @param eq_prec Error rate of matrix exponential calculation. Defaults to \code{1.0e-8}. This is 
+#' a generous value. If the model is running slow, you can try reducing it to, say, \code{1.0e-4}.
 #' @param debug Integer from 1-4. Opens browser() at various points in the function call. Mostly for 
 #' package developers. 
 #' @param ... Additional arguments passed to the optimization function 
@@ -28,7 +30,7 @@
 fit_ctmc <- function(walk_data, 
                      model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta=NULL), 
                      pen_fun = NULL, hessian=TRUE, get_reals=FALSE, start=NULL, method="nlminb", 
-                     fit=TRUE, debug=0, ...){
+                     fit=TRUE, eq_prec = 1.0e-8, debug=0, ...){
   
   if(debug==1) browser()
   # cell_idx_df <- select(walk_data$q_r, cell, cellx) %>% distinct()
@@ -61,6 +63,7 @@ fit_ctmc <- function(walk_data,
     X_q_r = X_q_r,
     X_q_m = X_q_m,
     par_map = par_map,
+    eq_prec = eq_prec,
     cell_map = walk_data$q_r[,c("cell","cellx")]
   )
   
@@ -123,18 +126,16 @@ fit_ctmc <- function(walk_data,
   if(!hessian) V <- NULL
   
   out <- list(
-    # par = c(beta_l,beta_q),
     par = par,
     vcov = V,
     log_lik = -0.5*opt$value,
     aic = opt$value + 2*length(par),
-    results = list(
-      beta = beta,
-      real = reals
-    ),
+    results = list(beta = beta, real = reals),
     opt = opt,
-    start=start,
-    data_list=data_list
+    start = start,
+    data_list = data_list,
+    pen_fun = pen_fun,
+    model_parameters = model_parameters
   )
   
   if(debug==4) browser()

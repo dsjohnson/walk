@@ -4,7 +4,7 @@
 #' @param cell_data A `\link[terra]{SpatRaster}` stack of covariates that will be used in CTMC 
 #' movement modeling. Cells with `NA` values will be considered areas to the animal cannot travel, i.e., 
 #' likelihood surfaces will be `0` for those cells.
-#' @param time_units Unit of measurement for numeric conversion of the POSIX timestamps 
+#' @param time_unit Unit of measurement for numeric conversion of the POSIX timestamps 
 #' in the telemetry data. Defaults to \code{"hours"}. Can specify, e.g., 
 #'  \code{"seconds"} or \code{"days"}
 #' @param return_type Type of object returned. One if `"data.frame"`, `"sparse"` (sparse matrix), 
@@ -24,7 +24,7 @@
 #' @importFrom ctmm uere
 #' @importFrom methods as
 #' @export
-proc_telem <- function(data, cell_data, time_units="hours", return_type="sparse", max_err=NULL, trunc=1.0e-8){
+proc_telem <- function(data, cell_data, time_unit="hours", return_type="sparse", max_err=NULL, trunc=1.0e-8){
   # Check arguments
   if(!inherits(data, "telemetry")) stop("'data' must be a ctmm::telemery object!")
   if(!inherits(cell_data, "SpatRaster")) stop("'cell_data' must be a terra::SpatRaster object!")
@@ -86,8 +86,9 @@ proc_telem <- function(data, cell_data, time_units="hours", return_type="sparse"
   if(zero_ind) warning("Some observations have likelihood values of 0 in all 'cell_data' cells!")
   
   times <- data.frame(obs=1:nrow(data), timestamp = data$timestamp)
-  dt <- diff(times$timestamp) |> `units<-`(time_units)
+  dt <- diff(times$timestamp) |> `units<-`(time_unit)
   times <- cbind(times, dt=c(0,dt))
+  attr(times, "time_unit") <- time_unit
   
   if(return_type=="data.frame"){
     out <- as.data.frame(out)
