@@ -28,7 +28,7 @@
 #' @importFrom stats ppois qlogis
 #' @export
 fit_ctmc <- function(walk_data, 
-                     model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta=NULL), 
+                     model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta=NULL, link="soft_plus"), 
                      pen_fun = NULL, hessian=TRUE, get_reals=FALSE, start=NULL, method="nlminb", 
                      fit=TRUE, eq_prec = 1.0e-8, debug=0, ...){
   
@@ -51,6 +51,11 @@ fit_ctmc <- function(walk_data,
   }
   delta <- delta/sum(delta)
   
+  link <- model_parameters$link
+  if(!is.null(link)){
+    if(!link%in%c("soft_plus","log")) stop("The 'link' object in must be either 'soft_plus' or'log'.")
+  } else link <- "soft_plus"
+  
   data_list <- list(
     N = nrow(walk_data$L),
     ns = nrow(walk_data$q_r),
@@ -64,6 +69,7 @@ fit_ctmc <- function(walk_data,
     X_q_m = X_q_m,
     par_map = par_map,
     eq_prec = eq_prec,
+    link=link,
     cell_map = walk_data$q_r[,c("cell","cellx")]
   )
   

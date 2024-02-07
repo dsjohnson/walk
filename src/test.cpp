@@ -29,6 +29,6 @@ arma::sp_mat dense_to_sparse(const arma::mat& M, const double& tol=1.0e-8){
 // [[Rcpp::export]]
 arma::mat my_test(const arma::mat v, SEXP Q, double prec, bool renorm=true, bool t2=true, bool checks=true) {
   arma::mat out;
-  out = v_exp_Q(v, Q, prec, true, true, true);
+  out = v_exp_Q(v, Q, prec, true, true, checks);
   return(out);
 }

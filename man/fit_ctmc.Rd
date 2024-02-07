@@ -6,7 +6,8 @@
 \usage{
 fit_ctmc(
   walk_data,
-  model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta = NULL),
+  model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta = NULL, link =
+    "soft_plus"),
   pen_fun = NULL,
   hessian = TRUE,
   get_reals = FALSE,

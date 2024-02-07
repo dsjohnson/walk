@@ -1,7 +1,7 @@
 Package: walk
 Title: Model Animal Movement With Continuous-Time Makov Chains
-Version: 0.0.0.913
-Date: 2024-02-02
+Version: 0.0.0.914
+Date: 2024-02-07
 Authors@R: 
     c(
     person("Devin S.", "Johnson", email="devin.johnson@noaa.gov", role = c("aut", "cre")),
@@ -12,7 +12,7 @@ Description: Model animal movement using continuous-time Makov chain models.
 License: CC0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Imports: 
     TMB (>= 1.9.0), Matrix, terra, dplyr, mvtnorm, numDeriv, optimx, sf, spdep, 
     ctmm, methods, mvnfast, tidyr, rARPACK

@@ -4,10 +4,14 @@
 \alias{get_lim_ud}
 \title{Get the limiting utilization distribution of the CTMC movement process}
 \usage{
-get_lim_ud(fit = NULL, Q = NULL)
+get_lim_ud(fit = NULL, hpd = NULL, method = "lu", ...)
 }
 \arguments{
 \item{fit}{A moveMMPP fitted model object from \code{\link[moveMMPP]{fit_mmpp_dir}}.}
+
+\item{method}{Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}.}
+
+\item{...}{Extra arguments to pass to \code{\link[rARPACK]{eigs}}}
 
 \item{Q}{A movement rate matrix. If provided, will ignore the \code{fit} argument.}
 }
