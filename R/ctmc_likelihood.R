@@ -17,8 +17,8 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
   Xb_q_r <- data_list$X_q_r %*% beta_q_r
   Xb_q_m <- data_list$X_q_m %*% beta_q_m
   
-  mx <- (aggregate(Xb_q_m, list(data_list$from), max)[,2])[data_list$from+1]
-  Xb_q_m <- Xb_q_m-mx
+  # mx <- (aggregate(Xb_q_m, list(data_list$from), max)[,2])[data_list$from+1]
+  # Xb_q_m <- Xb_q_m-mx
   
   # Q <- load_Q(from_to, Xb_q_r, Xb_q_m, ns=data_list$ns, norm = TRUE)
   
@@ -41,7 +41,8 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     delta = matrix(data_list$delta, nrow=1),
     eq_prec = data_list$eq_prec,
     link = ifelse(data_list$link=="soft_plus", 1, 0),
-    row_sweep = TRUE
+    a=data_list$a,
+    row_sweep = data_list$norm
   )$n2ll
   
   # ll <- ctmc_n2ll_arma(

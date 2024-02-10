@@ -13,19 +13,25 @@ get_Q <- function(fit, sparse=TRUE){
   Xb_q_r <- dl$X_q_r %*% beta_q_r
   Xb_q_m <- dl$X_q_m %*% beta_q_m
   from_to <- t(cbind(dl$from, dl$to))
-  Q <- load_Q(from_to, Xb_q_r, Xb_q_m, dl$ns, norm = TRUE)
+  if(fit$data_list$link=="soft_plus"){
+    Q <- load_Q_sp(from_to, Xb_q_r, Xb_q_m, dl$ns, dl$a, norm = dl$norm)
+  } else{
+    Q <- load_Q(from_to, Xb_q_r, Xb_q_m, dl$ns, norm = dl$norm) 
+  }
   if(!sparse) Q <- as.matrix(Q)
   return(Q)
 }
 
 #' @title Get the limiting utilization distribution of the CTMC movement process
 #' @param fit A moveMMPP fitted model object from \code{\link[moveMMPP]{fit_mmpp_dir}}.
-#' @param Q A movement rate matrix. If provided, will ignore the \code{fit} argument.
+#' @param hpd A vector of probabilities. Will return columns with highest probability area for each specified probability. E.g., 
+#' \code{hpd=c(0.5, 0.95)} will return 2 extra columns with 50 and 95% HPD densities. 
 #' @param method Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}.
 #' @param ... Extra arguments to pass to \code{\link[rARPACK]{eigs}}
 #' @author Devin S. Johnson
 #' @export
-#' @importFrom Matrix t
+#' @importFrom Matrix t lu expand Matrix
+#' @importFrom stats median
 #' @importFrom rARPACK eigs
 get_lim_ud <- function(fit=NULL, hpd=NULL, method="lu",...){
   
@@ -34,8 +40,8 @@ get_lim_ud <- function(fit=NULL, hpd=NULL, method="lu",...){
   if(method=="lu"){
     # browser()
     n <- nrow(tQ)
-    LU.decomp=lu(tQ)
-    LU=expand(LU.decomp)
+    LU.decomp=Matrix::lu(tQ)
+    LU=Matrix::expand(LU.decomp)
     P=LU$P
     Q=LU$Q
     L=LU$L

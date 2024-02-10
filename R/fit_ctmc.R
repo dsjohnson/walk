@@ -5,7 +5,7 @@
 #' @param pen_fun An optional penalty function. Should be on the scale of a log-prior distribution.
 #' @param hessian Logical. Should the Hessian matrix be calculated to obtain the parameter
 #' variance-covariance matrix.
-#' @param get_reals Calculate real values for expected residency, cell transition probabilities, and 
+#' @param reals Calculate real values for expected residency, cell transition probabilities, and 
 #' outlier proportion for observations.  
 #' @param start Optional starting values for the parameter must be a list of the 
 #' form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.
@@ -29,7 +29,7 @@
 #' @export
 fit_ctmc <- function(walk_data, 
                      model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta=NULL, link="soft_plus"), 
-                     pen_fun = NULL, hessian=TRUE, get_reals=FALSE, start=NULL, method="nlminb", 
+                     pen_fun = NULL, hessian=TRUE, reals=FALSE, start=NULL, method="nlminb", 
                      fit=TRUE, eq_prec = 1.0e-8, debug=0, ...){
   
   if(debug==1) browser()
@@ -42,6 +42,7 @@ fit_ctmc <- function(walk_data,
   par_map <- list(beta_q_r = 1:ncol(X_q_r))
   if(ncol(X_q_m)!=0) par_map$beta_q_m <- c(1:ncol(X_q_m)) + ncol(X_q_r)
   
+  if(is.null(model_parameters$p)) model_parameters$p <- FALSE
   if(model_parameters$p){
     par_map$logit_p <- ncol(X_q_m) + ncol(X_q_r) + 1
   }
@@ -54,7 +55,19 @@ fit_ctmc <- function(walk_data,
   link <- model_parameters$link
   if(!is.null(link)){
     if(!link%in%c("soft_plus","log")) stop("The 'link' object in must be either 'soft_plus' or'log'.")
-  } else link <- "soft_plus"
+  } else{
+    link <- "soft_plus"
+  }
+  if(link=="soft_plus"){
+    a <-  model_parameters$a
+    if(is.null(a)) a <- 1.0
+    if(a<1) stop("The 'a' parameter for the 'soft_plus' link function must be >1.")
+  } else{
+    a <- 0
+  }
+  
+  norm <- model_parameters$norm
+  if(is.null(norm) | !is.logical(norm)) norm <- TRUE
   
   data_list <- list(
     N = nrow(walk_data$L),
@@ -70,6 +83,8 @@ fit_ctmc <- function(walk_data,
     par_map = par_map,
     eq_prec = eq_prec,
     link=link,
+    a = a,
+    norm = norm,
     cell_map = walk_data$q_r[,c("cell","cellx")]
   )
   
@@ -122,7 +137,8 @@ fit_ctmc <- function(walk_data,
   
   par <- as.vector(opt$par)
   beta <- get_betas(par, V, data_list)
-  if(get_reals){
+  if(reals){
+    message('Calculating real parameter values...')  
     reals <- get_reals(par, V, data_list, walk_data, model_parameters)
   } else{
     reals <- NULL

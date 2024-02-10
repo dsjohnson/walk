@@ -9,11 +9,12 @@ get_lim_ud(fit = NULL, hpd = NULL, method = "lu", ...)
 \arguments{
 \item{fit}{A moveMMPP fitted model object from \code{\link[moveMMPP]{fit_mmpp_dir}}.}
 
+\item{hpd}{A vector of probabilities. Will return columns with highest probability area for each specified probability. E.g.,
+\code{hpd=c(0.5, 0.95)} will return 2 extra columns with 50 and 95\% HPD densities.}
+
 \item{method}{Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}.}
 
 \item{...}{Extra arguments to pass to \code{\link[rARPACK]{eigs}}}
-
-\item{Q}{A movement rate matrix. If provided, will ignore the \code{fit} argument.}
 }
 \description{
 Get the limiting utilization distribution of the CTMC movement process

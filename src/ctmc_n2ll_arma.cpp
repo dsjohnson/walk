@@ -10,7 +10,7 @@ using namespace arma;
 // function prototypes
 arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8);
 arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const bool& row_sweep=true);
-arma::sp_mat load_Q_sp(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const bool& row_sweep=true);
+arma::sp_mat load_Q_sp(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const double& a, const bool& row_sweep=true);
 
 
 // Calculate likelihood ///////////////
@@ -24,6 +24,7 @@ Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L,
                           const arma::rowvec& delta, 
                           const double& eq_prec = 1.0e-8,
                           const int& link = 1,
+                          const double& a = 1.0, 
                           const bool& row_sweep=true)
 {
   int N = dt.size();
@@ -31,7 +32,7 @@ Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L,
   arma::vec log_lik_v(N);
   arma::sp_mat Q;
   if(link==1){
-    Q = load_Q_sp(from_to, Xb_q_r, Xb_q_m, ns, row_sweep);
+    Q = load_Q_sp(from_to, Xb_q_r, Xb_q_m, ns, a, row_sweep);
   } else{
     Q = load_Q(from_to, Xb_q_r, Xb_q_m, ns, row_sweep);
   }

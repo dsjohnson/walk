@@ -10,7 +10,7 @@ fit_ctmc(
     "soft_plus"),
   pen_fun = NULL,
   hessian = TRUE,
-  get_reals = FALSE,
+  reals = FALSE,
   start = NULL,
   method = "nlminb",
   fit = TRUE,
@@ -30,7 +30,7 @@ of the MMPP model.}
 \item{hessian}{Logical. Should the Hessian matrix be calculated to obtain the parameter
 variance-covariance matrix.}
 
-\item{get_reals}{Calculate real values for expected residency, cell transition probabilities, and
+\item{reals}{Calculate real values for expected residency, cell transition probabilities, and
 outlier proportion for observations.}
 
 \item{start}{Optional starting values for the parameter must be a list of the

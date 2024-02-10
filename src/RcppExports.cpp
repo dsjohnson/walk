@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // ctmc_n2ll_arma
-Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L, const arma::vec& dt, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const double& p, const arma::rowvec& delta, const double& eq_prec, const int& link, const bool& row_sweep);
-RcppExport SEXP _walk_ctmc_n2ll_arma(SEXP LSEXP, SEXP dtSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP pSEXP, SEXP deltaSEXP, SEXP eq_precSEXP, SEXP linkSEXP, SEXP row_sweepSEXP) {
+Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L, const arma::vec& dt, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const double& p, const arma::rowvec& delta, const double& eq_prec, const int& link, const double& a, const bool& row_sweep);
+RcppExport SEXP _walk_ctmc_n2ll_arma(SEXP LSEXP, SEXP dtSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP pSEXP, SEXP deltaSEXP, SEXP eq_precSEXP, SEXP linkSEXP, SEXP aSEXP, SEXP row_sweepSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -27,18 +27,20 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::rowvec& >::type delta(deltaSEXP);
     Rcpp::traits::input_parameter< const double& >::type eq_prec(eq_precSEXP);
     Rcpp::traits::input_parameter< const int& >::type link(linkSEXP);
+    Rcpp::traits::input_parameter< const double& >::type a(aSEXP);
     Rcpp::traits::input_parameter< const bool& >::type row_sweep(row_sweepSEXP);
-    rcpp_result_gen = Rcpp::wrap(ctmc_n2ll_arma(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec, link, row_sweep));
+    rcpp_result_gen = Rcpp::wrap(ctmc_n2ll_arma(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec, link, a, row_sweep));
     return rcpp_result_gen;
 END_RCPP
 }
 // ctmc_predict_arma
-Rcpp::List ctmc_predict_arma(const arma::sp_mat& L, const arma::vec& dt, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const double& p, const arma::rowvec& delta, const double& eq_prec, const double& trunc_tol, const bool& row_sweep);
-RcppExport SEXP _walk_ctmc_predict_arma(SEXP LSEXP, SEXP dtSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP pSEXP, SEXP deltaSEXP, SEXP eq_precSEXP, SEXP trunc_tolSEXP, SEXP row_sweepSEXP) {
+Rcpp::List ctmc_predict_arma(const arma::sp_mat& L, const arma::vec& obs, const arma::vec& dt, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const double& p, const arma::rowvec& delta, const double& eq_prec, const double& trunc_tol, const int& link, const double& a, const bool& row_sweep);
+RcppExport SEXP _walk_ctmc_predict_arma(SEXP LSEXP, SEXP obsSEXP, SEXP dtSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP pSEXP, SEXP deltaSEXP, SEXP eq_precSEXP, SEXP trunc_tolSEXP, SEXP linkSEXP, SEXP aSEXP, SEXP row_sweepSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type L(LSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type obs(obsSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type dt(dtSEXP);
     Rcpp::traits::input_parameter< const int& >::type ns(nsSEXP);
     Rcpp::traits::input_parameter< const arma::umat& >::type from_to(from_toSEXP);
@@ -48,20 +50,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::rowvec& >::type delta(deltaSEXP);
     Rcpp::traits::input_parameter< const double& >::type eq_prec(eq_precSEXP);
     Rcpp::traits::input_parameter< const double& >::type trunc_tol(trunc_tolSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type row_sweep(row_sweepSEXP);
-    rcpp_result_gen = Rcpp::wrap(ctmc_predict_arma(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec, trunc_tol, row_sweep));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sp1
-double sp1(const double& x, const double& a);
-RcppExport SEXP _walk_sp1(SEXP xSEXP, SEXP aSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const double& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const int& >::type link(linkSEXP);
     Rcpp::traits::input_parameter< const double& >::type a(aSEXP);
-    rcpp_result_gen = Rcpp::wrap(sp1(x, a));
+    Rcpp::traits::input_parameter< const bool& >::type row_sweep(row_sweepSEXP);
+    rcpp_result_gen = Rcpp::wrap(ctmc_predict_arma(L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec, trunc_tol, link, a, row_sweep));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -106,8 +98,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // load_Q_sp
-arma::sp_mat load_Q_sp(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const bool& norm);
-RcppExport SEXP _walk_load_Q_sp(SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP nsSEXP, SEXP normSEXP) {
+arma::sp_mat load_Q_sp(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const double& a, const bool& norm);
+RcppExport SEXP _walk_load_Q_sp(SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP nsSEXP, SEXP aSEXP, SEXP normSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -115,8 +107,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q_r(Xb_q_rSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type Xb_q_m(Xb_q_mSEXP);
     Rcpp::traits::input_parameter< const int& >::type ns(nsSEXP);
+    Rcpp::traits::input_parameter< const double& >::type a(aSEXP);
     Rcpp::traits::input_parameter< const bool& >::type norm(normSEXP);
-    rcpp_result_gen = Rcpp::wrap(load_Q_sp(from_to, Xb_q_r, Xb_q_m, ns, norm));
+    rcpp_result_gen = Rcpp::wrap(load_Q_sp(from_to, Xb_q_r, Xb_q_m, ns, a, norm));
+    return rcpp_result_gen;
+END_RCPP
+}
+// load_Q_DZ
+arma::sp_mat load_Q_DZ(const arma::umat& from_to, const arma::vec& D_val, const arma::vec& Z_val, const int& ns, const double& a);
+RcppExport SEXP _walk_load_Q_DZ(SEXP from_toSEXP, SEXP D_valSEXP, SEXP Z_valSEXP, SEXP nsSEXP, SEXP aSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::umat& >::type from_to(from_toSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type D_val(D_valSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Z_val(Z_valSEXP);
+    Rcpp::traits::input_parameter< const int& >::type ns(nsSEXP);
+    Rcpp::traits::input_parameter< const double& >::type a(aSEXP);
+    rcpp_result_gen = Rcpp::wrap(load_Q_DZ(from_to, D_val, Z_val, ns, a));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -150,13 +158,13 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_walk_ctmc_n2ll_arma", (DL_FUNC) &_walk_ctmc_n2ll_arma, 11},
-    {"_walk_ctmc_predict_arma", (DL_FUNC) &_walk_ctmc_predict_arma, 11},
-    {"_walk_sp1", (DL_FUNC) &_walk_sp1, 2},
+    {"_walk_ctmc_n2ll_arma", (DL_FUNC) &_walk_ctmc_n2ll_arma, 12},
+    {"_walk_ctmc_predict_arma", (DL_FUNC) &_walk_ctmc_predict_arma, 14},
     {"_walk_soft_plus", (DL_FUNC) &_walk_soft_plus, 2},
     {"_walk_phi_exp_lnG", (DL_FUNC) &_walk_phi_exp_lnG, 3},
     {"_walk_load_Q", (DL_FUNC) &_walk_load_Q, 5},
-    {"_walk_load_Q_sp", (DL_FUNC) &_walk_load_Q_sp, 5},
+    {"_walk_load_Q_sp", (DL_FUNC) &_walk_load_Q_sp, 6},
+    {"_walk_load_Q_DZ", (DL_FUNC) &_walk_load_Q_DZ, 5},
     {"_walk_dense_to_sparse", (DL_FUNC) &_walk_dense_to_sparse, 2},
     {"_walk_my_test", (DL_FUNC) &_walk_my_test, 6},
     {NULL, NULL, 0}
