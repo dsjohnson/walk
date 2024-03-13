@@ -13,10 +13,20 @@ get_Q <- function(fit, sparse=TRUE){
   Xb_q_r <- dl$X_q_r %*% beta_q_r
   Xb_q_m <- dl$X_q_m %*% beta_q_m
   from_to <- t(cbind(dl$from, dl$to))
-  if(fit$data_list$link=="soft_plus"){
-    Q <- load_Q_sp(from_to, Xb_q_r, Xb_q_m, dl$ns, dl$a, norm = dl$norm)
+  link <- which(dl$link==c("soft_plus", "log"))
+  if(dl$form=="mult"){
+    Q <- load_Q_mult(from_to, Xb_q_r, Xb_q_m, dl$ns, 
+                     link_r = which(dl$link_r==c("soft_plus", "log")), 
+                     link_m = which(dl$link_m==c("soft_plus", "log")), 
+                     a_r = dl$a_r, a_m=dl$a_m,
+                     dl$norm)
+  } else if(dl$form=="add"){
+    Q <- load_Q_add(from_to, Xb_q_r, Xb_q_m, dl$ns,  
+                    link_r = which(dl$link_r==c("soft_plus", "log")), 
+                    link_m = which(dl$link_m==c("soft_plus", "log")), 
+                    a_r = dl$a_r, a_m=dl$a_m) 
   } else{
-    Q <- load_Q(from_to, Xb_q_r, Xb_q_m, dl$ns, norm = dl$norm) 
+    Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$ns, dl$k, dl$a_r) 
   }
   if(!sparse) Q <- as.matrix(Q)
   return(Q)

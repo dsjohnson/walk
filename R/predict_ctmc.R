@@ -62,8 +62,14 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, debug=0, ...){
     from_to=from_to, 
     Xb_q_r=Xb_q_r, Xb_q_m=Xb_q_m, p=p, 
     delta = matrix(data_list$delta, nrow=1),
-    eq_prec = data_list$eq_prec, link = link, a = data_list$a,
-    row_sweep=TRUE
+    eq_prec = data_list$eq_prec, 
+    link_r = which(data_list$link_r==c("soft_plus", "log")),
+    link_m = which(data_list$link_m==c("soft_plus", "log")),
+    form = which(data_list$form==c("mult", "add", "sde")),
+    a_r = data_list$a_r,
+    a_m = data_list$a_m,
+    k = data_list$k,
+    norm = data_list$norm
   )
   
   times$row = 1:nrow(Lpred)

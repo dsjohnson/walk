@@ -2,8 +2,6 @@
 
 # Installation
 
-*Do not install!* This package is not functional at this time.
-
 ## R-Universe
 
 ### Binary
@@ -20,7 +18,7 @@ install.packages('walk', repos='https://dsjohnson.r-universe.dev')
 install.packages('walk', type='source', repos='https://dsjohnson.r-universe.dev')
 ```
 
-## github
+## GitHub
 
 *You will need a C++ compiler for R*
 

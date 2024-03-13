@@ -1,0 +1,129 @@
+---
+title: "Notes for CTMC movement models"
+author: "Devin S. Johnson"
+format: pdf
+editor: visual
+---
+
+# SDE Approximation
+
+SDE movement models
+
+$$
+dX(t) = \mu(X(t))dt + \sigma(X(t))dW(t)
+$$
+
+where $X(t)$ is the location at time $t$, $\mu$ is the drift (advection) term at location $X(t)$, $\sigma(X(t))$ is the diffusive component, and $W(t)$ is a standard Brownian motion. An example is the Langevin diffusion, which is obtained by setting $\sigma(x) = \sigma$ and $\mu(x) = \frac{\sigma^2}{2}\nabla \log \pi(x)$. The limiting distribution of the Langevin diffusion is $\propto \pi(x)$.  
+
+## Building approximating CTMC
+
+We can approximate the SDE process $X(t)$ with a state-space discretized version $Y(t)$. The discrete state-space for movement will by given by a uniform grid of values $\Omega = \{y_1,\dots,y_M\}$, where $|y_j-y_i| = h$ for any neighboring pair $(i,j)$. The locations on the boarder of the movement area are denoted by $\partial\Omega$. We assume a no-flux boundary condition such that movement is constrained to the inside of $\partial\Omega$. 
+
+For small enough grid resolution, as $h \to 0$, the CTMC, $Y(t)$ will approximate $X(t)$ increasingly better if the following conditions hold for elements of the CTMC rate transition matrix
+
+  (1) $\sum_{j\ne i} q_{ij} h u_{ij} = \mu(y_i) + o(h)$
+  
+  (2) $\sum_{j\ne i} q_{ij} h^2 u_{ij}u_{ij}' = \sigma^2_iI + o(h)$
+
+The rate matrix $Q$ of the CTMC $Y(t)$ is given by
+$$
+q_{ij} = \left\{
+\begin{array}{ll}
+\frac{\delta_{ij}}{kh/2} + \frac{\sigma^2_i}{kh^2} & \text{for } i\ne j \text{ and } i \sim j. \\
+-\sum_{j\ne i} q_{ij} & i = j \\
+0 & \text{elsewise}
+\end{array}
+\right.,
+$$
+where $u_{ij}$ is a unit-vector pointing from $y_i$ to $y_j$, $\delta_{ij} = \max\{u_{ij}'\mu(y_i), 0\}$ and $k = 2$ for raster grids and $k=3$ for hexagon grids. One can verify the approximation by checking the local conditions.
+$$
+\begin{aligned}
+\sum_{j\ne i} \left(\frac{\delta_{ij}}{kh/2} + \frac{\sigma^2_i}{kh^2}\right) h u_{ij} 
+&= 2k^{-1}\sum_{j\ne i} \delta_{ij}u_{ij} +  (hk)^{-1}\sigma^2_i\sum_{j\ne i}u_{ij} \\
+&=  2k^{-1}\sum_{j\ne i} \delta_{ij}u_{ij} \\
+&=  2k^{-1}\sum_{j\ne i,\ u_{ij}'\mu_i > 0} (u_{ij}'\mu_i)u_{ij} = \mu_i
+\end{aligned},
+$$
+This results is due to the fact that, (a) $\sum_{j\ne i}u_{ij} = 0$ because the set of unit vectors is composed of 2 (raster) or 3 (hexagon) pairs of vectors where $u_{ij} = -u_{ij'}$, thus the sum over all the directional vectors is the zero vector. The equality in the last line is not as direct. To show it is true, we can rearrange the left side of the last line by noting
+$$
+\sum_{j\ne i,\ u_{ij}'\mu_i > 0} (u_{ij}'\mu_i)u_{ij} = U_i'U_i\mu_i,
+$$
+where $U_i$ is a matrix with rows equal to the 3 (for hexagon grid) or 2 (for raster grids) $u_{ij}$ vectors contributing to the sum. These vectors will always be separated by $\pi/3$ (hexagon) or $\pi/2$ (raster) radians. This is because $u'\mu_i \ge 0$ if it lies within the span of $\mu_i$ rotated by $\pm \pi/2$ radians. Therefore, we will begin with the hexagon case and the assumption that $\mu_i$ lies in the first quadrant, Thus going in a counterclockwise direction,
+$$
+U = \left[ 
+\begin{array}{cc}
+1 & 0 \\
+1/2 & \sqrt{3}/2 \\
+-1/2 & \sqrt{3}/2 
+\end{array}
+\right]
+$$.
+From which we obtain, $U'U = (3/2)I$. Now if $\mu_i$ lies in any other quadrant, all we need to do is rotate the $U$ matrix appropriately with the standard rotation matrix $R_\theta$, which gives, $U_i'U_i = R_\theta U' U R_\theta = (3/2)I$ because $R_\theta R_\theta' = I$. Thusm for any $\mu_i$, $U_i'U_i = (3/2)I$. In the raster case, this has already been discussed in the literature many times, but we can show it in the first quadrant noting that,
+$$
+U = \left[ 
+\begin{array}{cc}
+1 & 0 \\
+0 &1 
+\end{array}
+\right].
+$$
+Following the same reasoning we obtain $U_i'U_i = I$ for any $\mu_i$. 
+
+Going back to the original condition 1 check,
+$$
+\begin{aligned}
+\sum_{j\ne i} \left(\frac{\delta_{ij}}{kh/2} + \frac{\sigma^2_i}{kh^2}\right) h u_{ij} &=  2k^{-1}\sum_{j\ne i,\ u_{ij}'\mu_i > 0} (u_{ij}'\mu_i)u_{ij} \\
+&= 2k^{-1}U_i'U_i\mu_i \\
+&= \mu_i \text{ if } k = 3 \text{ (hexagon) or } 2 \text{ (raster) }
+\end{aligned},
+$$
+
+Now, we will proceed to condition (2). 
+$$
+\begin{aligned}
+\sum_{j\ne i} q_{ij} h^2 u_{ij}u_{ij}' &= \sum_{j\ne i} \left(\frac{\delta_{ij}}{kh/2} + \frac{\sigma^2_i}{kh^2}\right) h^2 u_{ij}u_{ij}' \\
+&=  (2h/k)\sum_{j\ne i,\ u_{ij}'\mu_i >0} \delta_{ij}u_{ij}u_{ij}' + (\sigma^2_i/k) \sum_{j\ne i} u_{ij}u_{ij}'\\
+&= h\sum_{j\ne i,\ u_{ij}'\mu_i >0} 2\delta_{ij}u_{ij}u_{ij}'/k + \sigma^2_i I \\
+&=  \sigma^2_i I + hM_i.
+\end{aligned}
+$$
+The fact that $\sum_{j\ne i} u_{ij}u_{ij}' = kI$ can be verified for a given set of neighbors, then a rotation of the coordinates will result in the same calculation. So, the second order property of the CTMC $Y(t)$ are not equal to the SDE $X(t)$, but it does converge in the limit as $h\to 0$, satisfying the condition. The dispersion of $Y(t)$ will be greater than that of $X(t)$ and it will depend on the magnitude and/or direction of the drift vector $\mu_i$ and its location relative to the $u_{ij}$ for which $\delta_{ij} >0$. One can see this by noting that $\sum_{j\ne i} \delta_{ij}u_{ij}u_{ij}'$ is positive semi-definite. 
+$$
+x'M_ix =  \sum_{j\ne i,\ u_{ij}'\mu_i >0} \delta_{ij} x'u_{ij}u_{ij}'x \ge 0
+$$
+because $u_ij$ are unit vectors the eigen values of $u_{ij}u_{ij}'$ are 1 and 0, thus,  $u_{ij}u_{ij}'$ is positive semi-definite and $\delta_{ij} \ge 0$ by definition. For a raster grid, the dispersion of $Y(t)$ has a cleaner form, $M_i$ is a diagonal matrix with the absolute values of $\mu_i$ on the diagonal. 
+
+There is an alternative formulation of the CTMC rate matrix that will result in exact equivalence. If we simple set $\delta_{ij} = u_{ij}'\mu_i$ rather than taking only the positive elements we can form the CTMC movement rates
+$$
+q_{ij} = \left\{
+\begin{array}{ll}
+\frac{u_{ij}'\mu_i}{kh} + \frac{\sigma^2_i}{kh^2} & \text{for } i\ne j \text{ and } i \sim j. \\
+-\sum_{j\ne i} q_{ij} & i = j \\
+0 & \text{elsewise}
+\end{array}
+\right.,
+$$
+where, now $k=2$ and 3 for raster and hexagon grids respectively. When we check condition (1), we still get 
+$$
+\sum_{i\ne j} q_{ij}hu_{ij} = \mu_i.
+$$
+But now, when we check condition (2), we obtain,
+$$
+\sum_{i\ne j} q_{ij}h^2u_{ij}u_{ij}' = \sigma_i^2I.
+$$
+This results because we retain both the positive and negative $u_{ij}'\mu_i$. There will be $k$ pairs of the same value, one positive, one negative. So, this begs the question, why not use this version from the beginning. The problem is that if $\mu_i$ is very large, then for some $j$, $u_{ij}'\mu_i$ might be substantially negative, resulting in a $q_{ij}$ that is negative. In parameter optimization routines if one can constrain the parameters such that $\sigma^2_i/(h|u_{ij}'\mu_i|) > 1$ for all $i,j$, then this approximation would be the best. In theory, this can always be fixed by making $h$ as small as necessary, but that may not be practical if $\mu_i$ dominates $\sigma^2_i$ by a large amount. 
+
+Using the results so to this point, we can expand the CTMC approximation rate matrix for rasters by using the queen's neighborhood structure and allowing movement to diagonal cells as well. These weights would be
+$$
+q_{ij} = \left\{
+\begin{array}{ll}
+\frac{\delta_{ij}}{kh/2} + \frac{\sigma^2_i}{kh^2} & \text{for } i\ne j \text{ and cells are rook neighbors} \\
+\frac{\delta_{ij}}{kh/\sqrt{2}} + \frac{\sigma^2_i}{2kh^2} & \text{for } i\ne j \text{ and cells are queen neighbors} \\
+-\sum_{j\ne i} q_{ij} & i = j \\
+0 & \text{elsewise}
+\end{array}
+\right.,
+$$
+The specification for queen neighbors is exactly the same we just need to adjust for the fact the distance to the centroid of the diagonal cells is $\sqrt{2}h$ versus $h$ for the NSEW neighbors. In addition, for the queen neighborhood rates we set $k=4$ because there are 4 symmetric movement axes and by using only the positive drift terms we are cutting the number of terms in the sums down by $1/2$. Again, we could use all 8 values of $u_{ij}'\mu_i$ we get exact correspondence between the first and second order properties. 
+
+

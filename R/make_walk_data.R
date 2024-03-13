@@ -23,8 +23,12 @@ make_walk_data <- function(proc_data, cell_data, grad=NULL, rast_mask=NULL,
   
   if(inherits(cell_data, "SpatRaster")){
     q_list <- make_q_data_rast(cell_data, grad=grad, rast_mask=rast_mask, directions=directions)
+    attr(q_list$q_m, "directions") <- directions
+    attr(q_list$q_m, "cov_class") <- "SpatRaster"
   } else if(inherits(cell_data, "sf")){
     q_list <- make_q_data_sf(cell_data, cell_name)
+    attr(q_list$q_m, "directions") <- NULL
+    attr(q_list$q_m, "cov_class") <- "sf"
   }
   out <- list()
   out$L <- proc_data$L[,q_list$q_r$cell]

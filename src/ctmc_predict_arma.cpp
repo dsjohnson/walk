@@ -9,9 +9,9 @@ using namespace arma;
 
 // function prototypes
 arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8);
-arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const bool& row_sweep=true);
-arma::sp_mat load_Q_sp(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const double& a = 1.0, const bool& row_sweep=true);
-
+arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const int& link_m=1, const double& a_r=1.0, const double& a_m=1.0, const bool& norm=true);
+arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const int& link_m=1, const double& a_r=1.0, const double& a_m=1.0);
+arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const double& k,const double& a_r=1.0);
 
 // Calculate likelihood ///////////////
 // [[Rcpp::export]]
@@ -26,16 +26,22 @@ Rcpp::List ctmc_predict_arma(
     const arma::rowvec& delta, 
     const double& eq_prec = 1.0e-8,
     const double& trunc_tol = 1.0e-8,
-    const int& link = 1,
-    const double& a = 1.0,
-    const bool& row_sweep=true)
+    const int& link_r = 1,
+    const int& link_m = 1,
+    const int& form = 1,
+    const double& a_r = 1.0, 
+    const double& a_m = 1.0, 
+    const double& k = 2.0,
+    const bool& norm=true)
 {
   int N = dt.size();
   arma::sp_mat Q;
-  if(link==1){
-    Q = load_Q_sp(from_to, Xb_q_r, Xb_q_m, ns, a, row_sweep);
-  } else{
-    Q = load_Q(from_to, Xb_q_r, Xb_q_m, ns, row_sweep);
+  if(form==1){
+    Q = load_Q_mult(from_to, Xb_q_r, Xb_q_m, ns, link_r, link_m, a_r, a_m, norm);
+  } else if(form==2){
+    Q = load_Q_add(from_to, Xb_q_r, Xb_q_m, ns, link_r, link_m, a_r, a_m);
+  } else if(form==3){
+    Q = load_Q_sde(from_to, Xb_q_r, Xb_q_m, ns, k, a_r);
   }
   
   

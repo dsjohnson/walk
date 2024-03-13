@@ -40,9 +40,13 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     p = p,
     delta = matrix(data_list$delta, nrow=1),
     eq_prec = data_list$eq_prec,
-    link = ifelse(data_list$link=="soft_plus", 1, 0),
-    a=data_list$a,
-    row_sweep = data_list$norm
+    link_r = which(data_list$link_r==c("soft_plus", "log")),
+    link_m = which(data_list$link_m==c("soft_plus", "log")),
+    form = which(data_list$form==c("mult", "add", "sde")),
+    a_r = data_list$a_r,
+    a_m = data_list$a_m,
+    k = data_list$k,
+    norm = data_list$norm
   )$n2ll
   
   # ll <- ctmc_n2ll_arma(

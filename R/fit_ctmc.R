@@ -17,18 +17,32 @@
 #' package developers. 
 #' @param ... Additional arguments passed to the optimization function 
 #' \code{\link[optimx]{optimr}} from the \code{\link[optimx]{optimx-package}}.
-#' @details
-#' Two model forms are available \code{list(lambda=list(form=~1, offset=NULL), q=list(form=~1, offset=~log(1.num_neigh)))}. For the 
-#' \code{q} model you must use \code{offset=0} to not have one. If it is left off, \code{offset=~log(1.num_neigh)))} 
-#' will be used. To use the movement rate form of Hewitt et al. (2023), one must use, e.g., 
-#' `q = list(res_form = ~from_var, mov_form=~to_var, offset=...)`, where `from_var` is a variable
+#' @details The argument \code{model_parameters} is a named list of items to specify the structure of the model. The elements are 
+#' \itemize{
+#'  \item `q_r = list(form=~1, link="soft_plus", a=1)` The model specification for the residency portion of the model.
+#'  \item `q_m = list(form=~1, link="soft_plus", a=1)` The model specification for the movement portion of the model.
+#'  \item `p` Logical. Whether or not to include a zero-inflation parameter for the location observation model. 
+#'  \item `delta` If not `NULL`, this should be a vector providing the probabilities that the animal is located 
+#'  in a given cell on the first location. If left as `NULL` a uniform probability will be used, i.e., inverse of the number of cells.
+#'  \item `form` Is the form of the rate model. One of `"mult"` (multiplicative residency rate times movement rate), 
+#'  `"add"` (additive residency and movement rates), and `"sde"` (stochastic differential equation approximation).
+#'  \item `norm` Logical. Should the movement rate be normalize to sum to 1 over the cells to which the animal can move. i.e., 
+#'  `q_{ij} = lambda_i * pi_{ij}` where `sum_j pi_{ij} = 1`. This is the parameterization suggested by Hewitt et al. (2023). 
+#' }
+#' For the residency and movement rate models with `"soft_plus"` links, the `a` parameter detemines the approximation to 
+#' a hard plus function, i.e., as `a` becomes large the soft plus function converges to `g^{-1}(x) = max(0,x)`. For this specification, `a` must be greater than or equal to 1.
 #' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
 #' @author Devin S. Johnson
 #' @import optimx dplyr numDeriv
 #' @importFrom stats ppois qlogis
 #' @export
 fit_ctmc <- function(walk_data, 
-                     model_parameters = list(q_r = ~1, q_m = ~1, p = FALSE, delta=NULL, link="soft_plus"), 
+                     model_parameters = list(
+                       q_r = list(form=~1, link="soft_plus", a=1),
+                       q_m = list(form=~1, link="soft_plus", a=1),
+                       p = FALSE, delta=NULL, form="mult",
+                       norm = TRUE
+                     ), 
                      pen_fun = NULL, hessian=TRUE, reals=FALSE, start=NULL, method="nlminb", 
                      fit=TRUE, eq_prec = 1.0e-8, debug=0, ...){
   
@@ -36,8 +50,9 @@ fit_ctmc <- function(walk_data,
   # cell_idx_df <- select(walk_data$q_r, cell, cellx) %>% distinct()
   # data <- data %>% left_join(cell_idx_df, by="cell")
   
-  X_q_r <- dm_q_r(model_parameters$q_r, walk_data)
-  X_q_m <- dm_q_m(model_parameters$q_m, walk_data)
+  if(is.null(model_parameters$q_r$form) | is.null(model_parameters$q_m$form)) stop("Model formulas must be specified for both residency and movement.")
+  X_q_r <- dm_q_r(model_parameters$q_r$form, walk_data)
+  X_q_m <- dm_q_m(model_parameters$q_m$form, walk_data)
   
   par_map <- list(beta_q_r = 1:ncol(X_q_r))
   if(ncol(X_q_m)!=0) par_map$beta_q_m <- c(1:ncol(X_q_m)) + ncol(X_q_r)
@@ -46,24 +61,56 @@ fit_ctmc <- function(walk_data,
   if(model_parameters$p){
     par_map$logit_p <- ncol(X_q_m) + ncol(X_q_r) + 1
   }
-
+  
   if(is.null(model_parameters$delta)){
     delta <- walk_data$L[1,]
   }
   delta <- delta/sum(delta)
   
-  link <- model_parameters$link
-  if(!is.null(link)){
-    if(!link%in%c("soft_plus","log")) stop("The 'link' object in must be either 'soft_plus' or'log'.")
+  if(is.null(model_parameters$q_r$link)){
+    link_r <- "soft_plus"
   } else{
-    link <- "soft_plus"
+    link_r <- model_parameters$q_r$link
   }
-  if(link=="soft_plus"){
-    a <-  model_parameters$a
-    if(is.null(a)) a <- 1.0
-    if(a<1) stop("The 'a' parameter for the 'soft_plus' link function must be >1.")
+  if(is.null(model_parameters$q_m$link)){
+    link_m <- "soft_plus"
   } else{
-    a <- 0
+    link_m <- model_parameters$q_m$link
+  }
+  if(!all(c(link_r,link_m)%in%c("soft_plus","log"))) stop("The 'link' objects in must be either 'soft_plus' or 'log'.")
+  
+  
+  form <- model_parameters$form
+  if(!is.null(form)){
+    if(!form%in%c("mult","add","sde")) stop("The 'form' object in must be either 'mult','add', or 'sde'.")
+  } else{
+    form<- "mult"
+  }
+  
+  
+  if(is.null(model_parameters$q_r$a)){
+    a_r <- 1
+  } else{
+    a_r <- model_parameters$q_r$a
+  }
+  if(is.null(model_parameters$q_m$a)){
+    a_m <- 1
+  } else{
+    a_m <- model_parameters$q_m$a
+  }
+  
+  if(a_r<1 | a_m<1) stop("The 'a' parameter for the 'soft_plus' and 'sde' link functions must be >1.")
+  
+  if(form %in% c("mult","add")){
+    k <- 0
+  } else {
+    k <- if(attr(walk_data$q_m, "directions")=="rook"){
+      k <- 2
+    } else if(attr(walk_data$q_m, "directions")=="queen"){
+      k <- 4
+    } else {
+      stop("'sde' model currently only functions with 'SpatRaster' class habitat data.")
+    }
   }
   
   norm <- model_parameters$norm
@@ -82,8 +129,12 @@ fit_ctmc <- function(walk_data,
     X_q_m = X_q_m,
     par_map = par_map,
     eq_prec = eq_prec,
-    link=link,
-    a = a,
+    link_r=link_r,
+    link_m=link_m,
+    form=form,
+    a_r = a_r,
+    a_m = a_m,
+    k = k,
     norm = norm,
     cell_map = walk_data$q_r[,c("cell","cellx")]
   )
@@ -106,7 +157,7 @@ fit_ctmc <- function(walk_data,
   if(debug==2) browser()
   
   # opt <- optimx::optimr(par=par_start, fn=obj_fun, method=method, data_list=data_list, control = list(trace=10, rel.tol=1.0e-3))
-  
+  # ctmc_n2ll(par_start, data_list, debug=1)
   
   if(fit){
     message('Optimizing likelihood...')  
@@ -130,7 +181,7 @@ fit_ctmc <- function(walk_data,
   } else{
     hessian <- FALSE
     V <- NULL
-    opt <- list(par=start, objective=ctmc_n2ll(start, data_list))
+    opt <- list(par=par_start, objective=ctmc_n2ll(par_start, data_list))
   }
   
   if(debug==3) browser()

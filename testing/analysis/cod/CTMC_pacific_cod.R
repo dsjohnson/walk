@@ -7,12 +7,11 @@ library(ggplot2)
 library(tidyterra)
 library(ggspatial)
 library(lubridate)
+library(animation)
 #library(walk)
 devtools::load_all("~/research/projects/r_packages/walk")
 
-# setwd("C:/Users/James.Thorson/Desktop/Git/Spatio-temporal-models-for-ecologists/Chap_9")
 setwd("~/research/projects/r_packages/walk/testing/analysis/cod")
-source( "Shared_functions/add_legend.R" )
 
 # load data
 bathy_terra <- readRDS("ai_bathy_3km.Rds")
@@ -32,12 +31,12 @@ likelihood_terra <- as.array( terra::aggregate(likelihood_terra, fact=fact) )
 # Eliminate land cells
 bathy_terra[bathy_terra<=1] <- NA
 bathy_terra$bathy_km <- bathy_terra/1000
-bathy_terra$bathy_km_s <- scale(bathy_terra$bathy_km)
-bathy_terra$bathy_t <- terra::ifel(bathy_terra$bathy_km>4, 4, bathy_terra$bathy_km)
+bathy_terra$bathy_km2 <- bathy_terra$bathy_km^2
+bathy_terra$bathy_t <- terra::ifel(bathy_terra$bathy_km>3, 3, bathy_terra$bathy_km)
 
 ggplot() +
-  geom_spatraster(data=log(bathy_terra$bathy_t)) + 
-  scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="UD") + 
+  geom_spatraster(data=bathy_terra$bathy_km) + 
+  scale_fill_gradientn(colors=rev(sf.colors(10)), na.value = "transparent", name="Bathymetry (km)") + 
   # scale_fill_distiller(palette="YlOrRd", direction = 1, na.value = "transparent", name="UD") + 
   annotation_spatial(ak, fill=gray(0.8), color=1) +
   scale_y_continuous(breaks=seq(-180,180,1)) +
@@ -68,60 +67,38 @@ attr(pdata$times,"time_unit") <- "days"
 
 
 # Format habitat for {walk}
-walk_data <- make_walk_data(pdata, bathy_terra, grad=c("bathy_km","bathy_km_s"), rast_mask = bathy_terra[[1]])
+walk_data <- make_walk_data(pdata, bathy_terra, grad=c("bathy_km","bathy_km2"), rast_mask = bathy_terra[[1]]) 
 
-walk_data$q_m$d_bathy <- (walk_data$q_m$bathy_t-walk_data$q_m$from_bathy_t) 
 
-### Get average "d_bathy" for use in residency model
-walk_data$q_r$avg_d_bathy <- walk_data$q_m |> group_by(from_cellx) |> 
-  summarize(avg_d_bathy = mean(d_bathy)) |> arrange(from_cellx) |> pull(avg_d_bathy)
-walk_data$q_r$avg_d_bathy_2 <- walk_data$q_m |> group_by(from_cellx) |> 
-  summarize(avg_d_bathy_2 = mean(d_bathy^2)) |> arrange(from_cellx) |> pull(avg_d_bathy_2)
+### Bathymetry differences for preference function.
+walk_data$q_m$d_bathy <- (walk_data$q_m$bathy_km-walk_data$q_m$from_bathy_km) / (res(bathy_terra)[1]/1000)
+walk_data$q_m$d_bathy2 <- (walk_data$q_m$bathy_km^2-walk_data$q_m$from_bathy_km^2) / (res(bathy_terra)[1]/1000)
 
 
 # Diffusion depends on average d_bathy more like traditional CTMC
 fit <- fit_ctmc(walk_data,
                  model_parameters = list(
-                   q_r = ~ log(bathy_t), # residency model
-                   q_m = ~d_bathy + I(d_bathy^2) # preference model
-                   ), reals = TRUE, # get est. of residency expectation and multinomial movement probability
-                 control=list(trace=1))
-# AIC = 298
-
-# Actual constant diffusion
-fit2 <- fit_ctmc(walk_data,
-                 model_parameters = list(
-                   q_r = ~ 1, # residency model
-                   q_m = ~d_bathy + I(d_bathy^2), # preference model
-                   link="log",
-                   norm=FALSE
-                 ), reals = TRUE, control=list(trace=10), fit=FALSE)
-# AIC = 333
-
+                   q_r = list(form=~ bathy_km), # residency model
+                   q_m = list(form=~ d_bathy + d_bathy2) # preference model
+                   ), 
+                reals = FALSE, fit=TRUE, control=list(trace=1)
+                )
 ud <- get_lim_ud(fit)
-beta_q_m <- fit2$results$beta$q_m$est
-stat2$pref <- beta_q_m[1]*walk_data$q_r$bathy_km_trunc + beta_q_m[2]*walk_data$q_r$bathy_km_trunc^2
+beta_q_m <- fit$results$beta$q_m$est
+ud$pref <- beta_q_m[1]*walk_data$q_r$bathy_km + beta_q_m[2]*walk_data$q_r$bathy_km^2
 
+Q <- get_Q(fit)
 
+ud$res <- -1/diag(Q)
+plot(walk_data$q_r$bathy_km, ud$pref)
 
+cells <- rast(bathy_terra)
 cells[['ud']] <- 0
-cells[['ud']][stat2$cell] <- stat2$ud
-
+cells[ud$cell] <- ud$ud
 cells[['pref']] <- 0
-cells[["pref"]][stat2$cell] <- stat2$pref
-
+cells[['pref']][ud$cell] <- ud$pref
 cells[['res']] <- 0
-cells[["res"]][stat2$cell] <- fit2$results$real$residency$real
-# cells[["pref"]][cells[["pref"]]<log(1.0e-8)] <- NA
-
-pref_df <- data.frame(
-  x = walk_data$q_r$bathy_km_trunc,
-  x_us = walk_data$q_r$ai_bathy_fill
-) %>% mutate(
-  y = beta_q_m[1]*x + beta_q_m[2]*x^2
-) %>% arrange(x)
-
-plot(y~x_us, type="l", data=pref_df[,])
+cells[['res']][ud$cell] <- ud$res
 
 ggplot() +
   geom_spatraster(data=cells$ud) + 
@@ -140,13 +117,68 @@ ggplot() +
   scale_x_continuous(breaks=seq(-180,180,5)) +
   theme_bw()
 
-# ggplot() +
-#   geom_spatraster(data=cells$res) + 
-#   scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="Avg. residency") + 
-#   annotation_spatial(ak, fill=gray(0.8), color=1) + 
-#   scale_y_continuous(breaks=seq(-180,180,1)) +
-#   scale_x_continuous(breaks=seq(-180,180,5)) +
-#   theme_bw()
+ggplot() +
+  geom_spatraster(data=cells$res) + 
+  scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="E[residence] (d)") + 
+  annotation_spatial(ak, fill=gray(0.8), color=1) + 
+  scale_y_continuous(breaks=seq(-180,180,1)) +
+  scale_x_continuous(breaks=seq(-180,180,5)) +
+  theme_bw()
+
+
+
+
+
+# Actual constant diffusion
+fit_sde <- fit_ctmc(walk_data,
+                 model_parameters = list(
+                   q_r = list(form=~ 1), # residency model
+                   q_m = list(form=~bathy_km_grad), # preference model
+                   form="sde"
+                 ), reals = FALSE, control=list(trace=10)
+                 )
+# AIC = 333
+
+
+ud_sde <- get_lim_ud(fit_sde)
+beta_q_m <- fit_sde$results$beta$q_m$est
+sig <- as.vector(soft_plus(fit_sde$results$beta$q_r$est))
+b <- 2*(beta_q_m/sig^2)
+
+# Check if cell size is small enough:
+sig^2/max(abs(b*walk_data$q_m$bathy_km_grad))
+
+ud_sde$pi <- exp(-b[1]*walk_data$q_r$bathy_km)# - b[2]*walk_data$q_r$bathy_km^2) #+ beta_q_m[2]*walk_data$q_r$bathy_km2
+ud_sde$pi <- ud_sde$pi/sum(ud_sde$pi)
+
+# Limiting distribution from:
+# Brillinger, D. R., Preisler, H. K., Ager, A. A., 
+# Kie, J. G., & Stewart, B. S. (2002). Employing stochastic differential 
+# equations to model wildlife motion. Bulletin of the Brazilian Mathematical 
+# Society, 33, 385-408.
+
+
+cells[['ud_sde']] <- 0
+cells[['ud_sde']][ud_sde$cell] <- ud_sde$ud
+cells[['pi_sde']] <- 0
+cells[["pi_sde"]][ud_sde$cell] <- ud_sde$pi
+
+
+ggplot() +
+  geom_spatraster(data=cells$ud_sde) + 
+  scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="UD") + 
+  annotation_spatial(ak, fill=gray(0.8), color=1) +
+  scale_y_continuous(breaks=seq(-180,180,1)) +
+  scale_x_continuous(breaks=seq(-180,180,5)) +
+  theme_bw()
+
+ggplot() +
+  geom_spatraster(data=cells$pi_sde) + 
+  scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="Pi") + 
+  annotation_spatial(ak, fill=gray(0.8), color=1) + 
+  scale_y_continuous(breaks=seq(-180,180,1)) +
+  scale_x_continuous(breaks=seq(-180,180,5)) +
+  theme_bw()
 
 
 ######################
@@ -154,10 +186,9 @@ ggplot() +
 ######################
 
 aux_time <- seq(head(walk_data$times$timestamp,1), tail(walk_data$times$timestamp,1), "1 hours")
-P <- predict_ctmc(fit2, walk_data, aux_timestamp=aux_time, debug=0)
+P <- predict_ctmc(fit, walk_data, aux_timestamp=aux_time)
 
 Punif <- P$local_state_prob[P$times$type=="p",]
-
 pred_loc <- rast(cells, nlyr=nrow(Punif))
 for(i in 1:nrow(Punif)){
   pred_loc[[i]][walk_data$q_r$cell] <-  Punif[i,]
@@ -167,9 +198,16 @@ names(pred_loc) <- filter(P$times, type=="p") |> pull(timestamp) |> as.character
 pred_loc[pred_loc<1.0e-4] <- NA
 
 cells[["obs_use"]] <- NA
-# cells[["obs_use"]][apply(P$local_state_prob, 1, which.max)] <- 1
 cells[["obs_use"]][walk_data$q_r$cell] <- colSums(Punif) |> as.vector()
-cells[["obs_use"]][walk_data$q_r$cell] <- Punif[1400,]
+
+ggplot() +
+  geom_spatraster(data=cells$obs_use) + 
+  scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="Observed\nuse (h)") + 
+  annotation_spatial(ak, fill=gray(0.8), color=1) +
+  scale_y_continuous(breaks=seq(-180,180,1)) +
+  scale_x_continuous(breaks=seq(-180,180,5)) +
+  theme_bw()
+
 
 plt_foo <- function(n){
   for(i in 1:n){
@@ -185,7 +223,7 @@ plt_foo <- function(n){
 }
 
 saveVideo({
-  plt_foo(300)
+  plt_foo(nlyr(pred_loc))
 }, video.name = "cod_pred_loc.mp4", 
 interval=0.025, ani.res=72, ani.width=1080, ani.height=600)
 

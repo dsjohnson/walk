@@ -4,9 +4,9 @@
 \name{walk-package}
 \alias{walk}
 \alias{walk-package}
-\title{walk: Model Animal Movement With Continuous-Time Makov Chains}
+\title{walk: Model Animal Movement With Continuous-Time Markov Chains}
 \description{
-Model animal movement using continuous-time Makov chain models.
+Model animal movement using continuous-time Markov chain models.
 }
 \author{
 \strong{Maintainer}: Devin S. Johnson \email{devin.johnson@noaa.gov}
