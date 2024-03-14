@@ -1,0 +1,172 @@
+---
+title: "Archival tags"
+author: "James T. Thorson"
+output: rmarkdown::html_vignette
+#output: rmarkdown::pdf_document
+vignette: >
+  %\VignetteIndexEntry{Archival tags}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteDepends{dsem}
+---
+
+```{r, include = FALSE}
+EVAL <- TRUE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = EVAL,
+  purl = EVAL
+)
+# Install locally
+#  devtools::install_local( R'(C:\Users\James.Thorson\Desktop\Git\walk)', force=TRUE )
+# Build and PDF
+#  setwd(R'(C:\Users\James.Thorson\Desktop\Git\walk)'); devtools::build_rmd("vignettes/archival_tags.Rmd"); rmarkdown::render( "vignettes/archival_tags.Rmd", rmarkdown::pdf_document())
+```
+
+```{r setup, echo=TRUE, warning=FALSE, message=FALSE}
+library(walk)
+
+# Additional packages for demo below
+library(terra)
+library(sf)
+library(rnaturalearth)
+library(ggplot2)
+library(Matrix)
+library(ggplot2)
+library(tidyterra)
+library(ggspatial)
+library(lubridate)
+library(animation)
+```
+
+`walk` estimates a preference function and variation in diffusion rates using a "data likelihood" that represents locational error from tagging or archival tags.  We demonstrate this using data for a tagged Pacific cod in the Aleutian Islands.
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE, fig.width=6, fig.height=6}
+data(pcod_archival_tag)
+
+# Extract pieces
+bathy_terra <- rast(pcod_archival_tag$bathymetry)
+likelihood_terra <- rast(pcod_archival_tag$data_likelihood)
+
+# Get land layer
+ak <- ne_states( "united states of america", return="sf")
+ak <- ak[pmatch("Alas", ak$name_en),]
+ak <- st_transform( ak, crs=st_crs("+proj=aea +lat_0=50 +lon_0=-154 +lat_1=55 +lat_2=65 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs") )
+ak <- st_geometry(ak)
+
+# change resolution
+fact <- 2
+bathy_terra <- terra::aggregate( bathy_terra, fact = fact )
+likelihood_terra <- as.array( terra::aggregate(likelihood_terra, fact=fact) )
+
+# Eliminate land cells
+bathy_terra[bathy_terra<=1] <- NA
+bathy_terra$bathy_km <- bathy_terra/1000
+bathy_terra$bathy_km2 <- bathy_terra$bathy_km^2
+bathy_terra$bathy_t <- terra::ifel(bathy_terra$bathy_km>3, 3, bathy_terra$bathy_km)
+
+# Plot
+ggplot() +
+  geom_spatraster(data=bathy_terra$bathy_km) + 
+  scale_fill_gradientn(colors=rev(sf.colors(10)), na.value = "transparent", name="Bathymetry (km)") + 
+  # scale_fill_distiller(palette="YlOrRd", direction = 1, na.value = "transparent", name="UD") + 
+  annotation_spatial(ak, fill=gray(0.8), color=1) +
+  scale_y_continuous(breaks=seq(-180,180,1)) +
+  scale_x_continuous(breaks=seq(-180,180,5)) +
+  theme_bw()
+```
+
+Next we create data inputs in the format expected:
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE, fig.width=6, fig.height=6}
+L <- t(apply(likelihood_terra, MARGIN=3, FUN=function(mat){as.vector(t(mat))}))
+L <- Matrix(L) |> as("CsparseMatrix")
+pdata <- list(L=L)
+pdata$times <- data.frame(
+  obs=1:nrow(L), 
+  timestamp = seq(mdy_hms("2/21/2019 12:00:00"), mdy_hms("5/23/2019 12:00:00"), "1 day")
+  )
+pdata$times$dt = c(0, diff(pdata$times$timestamp)) 
+units(pdata$times$dt) <- "days"
+attr(pdata$times,"time_unit") <- "days"
+
+# Format habitat for {walk}
+walk_data <- make_walk_data(pdata, bathy_terra, grad=c("bathy_km","bathy_km2"), rast_mask = bathy_terra[[1]]) 
+
+### Bathymetry differences for preference function.
+walk_data$q_m$d_bathy <- (walk_data$q_m$bathy_km-walk_data$q_m$from_bathy_km) / (res(bathy_terra)[1]/1000)
+walk_data$q_m$d_bathy2 <- (walk_data$q_m$bathy_km^2-walk_data$q_m$from_bathy_km^2) / (res(bathy_terra)[1]/1000)
+```
+
+Then we can fit the continuous-time Markov chain as a Hidden Markov model (HMM):
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE, fig.width=6, fig.height=6}
+# Diffusion depends on average d_bathy more like traditional CTMC
+fit <- fit_ctmc(walk_data,
+                 model_parameters = list(
+                   q_r = list(form=~ bathy_km), # residency model
+                   q_m = list(form=~ d_bathy + d_bathy2) # preference model
+                   ), 
+                reals = FALSE, fit=TRUE, control=list(trace=1)
+                )
+```
+
+After model fitting, we can then extract the utilization distribution:
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE, fig.width=6, fig.height=6}
+# Get UD
+ud <- get_lim_ud(fit)
+# Get parameter estimates
+beta_q_m <- fit$results$beta$q_m$est
+# Calculate preference function from parameters
+ud$pref <- beta_q_m[1]*walk_data$q_r$bathy_km + beta_q_m[2]*walk_data$q_r$bathy_km^2
+# Get movement-rate (generator) matrix
+Q <- get_Q(fit)
+# Get expected residence time from diagonal of movement-rate matrix
+ud$res <- -1/diag(Q)
+
+# Plot preference as function of bathymetry
+plot(walk_data$q_r$bathy_km, ud$pref)
+```
+
+Finally, we can plot the 
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE, fig.width=6, fig.height=6}
+# Create raster of output
+cells <- rast(bathy_terra)
+cells[['ud']] <- 0
+cells[ud$cell] <- ud$ud
+cells[['pref']] <- 0
+cells[['pref']][ud$cell] <- ud$pref
+cells[['res']] <- 0
+cells[['res']][ud$cell] <- ud$res
+
+# Plot utilization distribution
+ggplot() +
+  geom_spatraster(data=cells$ud) + 
+  scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="UD") + 
+  # scale_fill_distiller(palette="YlOrRd", direction = 1, na.value = "transparent", name="UD") + 
+  annotation_spatial(ak, fill=gray(0.8), color=1) +
+  scale_y_continuous(breaks=seq(-180,180,1)) +
+  scale_x_continuous(breaks=seq(-180,180,5)) +
+  theme_bw()
+
+# Plot preference function
+ggplot() +
+  geom_spatraster(data=cells$pref) + 
+  scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="Preference") + 
+  annotation_spatial(ak, fill=gray(0.8), color=1) + 
+  scale_y_continuous(breaks=seq(-180,180,1)) +
+  scale_x_continuous(breaks=seq(-180,180,5)) +
+  theme_bw()
+
+# Plot residence time
+ggplot() +
+  geom_spatraster(data=cells$res) + 
+  scale_fill_gradientn(colors=sf.colors(10), na.value = "transparent", name="E[residence] (d)") + 
+  annotation_spatial(ak, fill=gray(0.8), color=1) + 
+  scale_y_continuous(breaks=seq(-180,180,1)) +
+  scale_x_continuous(breaks=seq(-180,180,5)) +
+  theme_bw()
+```
