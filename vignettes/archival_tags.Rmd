@@ -1,0 +1,37 @@
+---
+title: "Archival tags"
+author: "James T. Thorson"
+output: rmarkdown::html_vignette
+#output: rmarkdown::pdf_document
+vignette: >
+  %\VignetteIndexEntry{Archival tags}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteDepends{dsem}
+---
+
+```{r, include = FALSE}
+EVAL <- TRUE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = EVAL,
+  purl = EVAL
+)
+# Install locally
+#  devtools::install_local( R'(C:\Users\James.Thorson\Desktop\Git\walk)', force=TRUE )
+# Build and PDF
+#  setwd(R'(C:\Users\James.Thorson\Desktop\Git\walk)'); devtools::build_rmd("vignettes/archival_tags.Rmd"); rmarkdown::render( "vignettes/archival_tags.Rmd", rmarkdown::pdf_document())
+```
+
+```{r setup, echo=TRUE, warning=FALSE, message=FALSE}
+library(walk)
+```
+
+`walk` estimates a preference function and variation in diffusion rates using a "data likelihood" that represents locational error from tagging or archival tags.  We demonstrate this using data for a tagged Pacific cod in the Aleutian Islands.
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE, fig.width=6, fig.height=6}
+
+```
+
+
