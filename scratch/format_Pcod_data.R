@@ -9,4 +9,4 @@ pcod_archival_tag = list(
   data_likelihood = data_likelihood                       
 )
 
-usethis::use_data( pcod_archival_tag )
+usethis::use_data( pcod_archival_tag, overwrite=TRUE )
