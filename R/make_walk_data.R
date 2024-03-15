@@ -1,7 +1,8 @@
 #' @title Produce design data for use in fitting MMPP movement models
-#' @param proc_data ---.
-#' @param cell_data ---.
-#' @param grad ---.
+#' @param proc_data A sparse matrix with rows corresponding to time steps and columns corresponding to cells. 
+#' The entries are probabilities that the animal is located in the corresponding cell and time.
+#' @param cell_data A `SpatRaster` object from the {terra} package.
+#' @param grad A character vector of names of `cell_data` layers for which gradient covariates will be constructed.
 #' @param rast_mask Raster mask for inaccessible cells when \code{cell_data} is of type \code{SpatRaster} from the \code{terra} package. This is ignored
 #' if \code{cell_data} is an \code{POLYGON} data frame from the \code{sf} package.
 #' @param directions ---.
@@ -26,9 +27,10 @@ make_walk_data <- function(proc_data, cell_data, grad=NULL, rast_mask=NULL,
     attr(q_list$q_m, "directions") <- directions
     attr(q_list$q_m, "cov_class") <- "SpatRaster"
   } else if(inherits(cell_data, "sf")){
-    q_list <- make_q_data_sf(cell_data, cell_name)
-    attr(q_list$q_m, "directions") <- NULL
-    attr(q_list$q_m, "cov_class") <- "sf"
+    stop("In the current version cell_data must be a 'SpatRaster' from the terra package. In future versions we hope to incorporate sf polygons data sets.")
+    # q_list <- make_q_data_sf(cell_data, cell_name)
+    # attr(q_list$q_m, "directions") <- NULL
+    # attr(q_list$q_m, "cov_class") <- "sf"
   }
   out <- list()
   out$L <- proc_data$L[,q_list$q_r$cell]
