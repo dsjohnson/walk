@@ -62,11 +62,11 @@ fit_ctmc <- function(walk_data,
     par_map$logit_p <- ncol(X_q_m) + ncol(X_q_r) + 1
   }
   
-  if(is.null(model_parameters$delta)){
-    delta <- walk_data$L[1,]
-  }
-  delta <- delta/sum(delta)
-  
+  # if(is.null(model_parameters$delta)){
+  #   delta <- walk_data$L[1,]
+  # }
+  # delta <- delta/sum(delta)
+  # 
   if(is.null(model_parameters$q_r$link)){
     link_r <- "soft_plus"
   } else{
@@ -121,7 +121,7 @@ fit_ctmc <- function(walk_data,
     ns = nrow(walk_data$q_r),
     dt = walk_data$times$dt,
     L = walk_data$L,
-    delta = delta,
+    delta = model_parameters$delta,
     ### Q
     from = as.integer(walk_data$q_m$from_cellx-1),
     to = as.integer(walk_data$q_m$cellx-1),

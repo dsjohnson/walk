@@ -28,6 +28,17 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     p = 0
   }
   
+  if(is.null(data_list$delta)){
+    delta <- walk_data$L[1,]
+  } else if(data_list$delta=="stationary"){
+    delta <- get_lim_ud(list(par = par, data_list = data_list))
+    delta <- delta$ud *  walk_data$L[1,]
+  } else {
+    delta <- delta
+  }
+  delta <- delta/sum(delta)
+
+  
   if(debug==2) browser()
   
   ctmc_n2ll_arma(
@@ -38,7 +49,7 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     Xb_q_r = Xb_q_r, 
     Xb_q_m = Xb_q_m,
     p = p,
-    delta = matrix(data_list$delta, nrow=1),
+    delta = matrix(delta, nrow=1),
     eq_prec = data_list$eq_prec,
     link_r = which(data_list$link_r==c("soft_plus", "log")),
     link_m = which(data_list$link_m==c("soft_plus", "log")),
@@ -49,16 +60,6 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     norm = data_list$norm
   )$n2ll
   
-  # ll <- ctmc_n2ll_arma(
-  #   L = data_list$L, 
-  #   dt = data_list$dt, 
-  #   ns = data_list$ns, 
-  #   from_to = from_to, 
-  #   Xb_q_r = Xb_q_r, 
-  #   Xb_q_m = Xb_q_m,
-  #   p = 0.5,
-  #   delta = matrix(data_list$delta, nrow=1),
-  # )
 }
 
 
