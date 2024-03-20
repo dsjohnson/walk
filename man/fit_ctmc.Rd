@@ -6,9 +6,7 @@
 \usage{
 fit_ctmc(
   walk_data,
-  model_parameters = list(q_r = list(form = ~1, link = "soft_plus", a = 1), q_m =
-    list(form = ~1, link = "soft_plus", a = 1), p = FALSE, delta = NULL, form = "mult",
-    norm = TRUE),
+  model_parameters = ctmc_control(),
   pen_fun = NULL,
   hessian = TRUE,
   reals = FALSE,
@@ -23,8 +21,7 @@ fit_ctmc(
 \arguments{
 \item{walk_data}{A design data list produced by the function \code{\link{make_walk_data}}.}
 
-\item{model_parameters}{Model formula for the detection and movement portions
-of the MMPP model.}
+\item{model_parameters}{A named list giving specifications for the model. See \code{\link[walk]{ctmc_control}}.}
 
 \item{pen_fun}{An optional penalty function. Should be on the scale of a log-prior distribution.}
 
@@ -52,25 +49,6 @@ package developers.}
 }
 \description{
 Fit CTMC movement model to telemetry data
-}
-\details{
-The argument \code{model_parameters} is a named list of items to specify the structure of the model. The elements are
-\itemize{
-\item \code{q_r = list(form=~1, link="soft_plus", a=1)} The model specification for the residency portion of the model.
-\item \code{q_m = list(form=~1, link="soft_plus", a=1)} The model specification for the movement portion of the model.
-\item \code{p} Logical. Whether or not to include a zero-inflation parameter for the location observation model.
-\item \code{delta} If not \code{NULL}, this should be a vector providing the probabilities that the animal is located
-in a given cell on the first location. If left as \code{NULL} a uniform probability will be used, i.e., inverse of the number of cells.
-\item \code{form} Is the form of the rate model. One of \code{"mult"} (multiplicative residency rate times movement rate),
-\code{"add"} (additive residency and movement rates), and \code{"sde"} (stochastic differential equation approximation).
-\item \code{norm} Logical. Should the movement rate be normalize to sum to 1 over the cells to which the animal can move. i.e.,
-\verb{q_\{ij\} = lambda_i * pi_\{ij\}} where \verb{sum_j pi_\{ij\} = 1}. This is the parameterization suggested by Hewitt et al. (2023).
-}
-For the residency and movement rate models with \code{"soft_plus"} links, the \code{a} parameter detemines the approximation to
-a hard plus function, i.e., as \code{a} becomes large the soft plus function converges to \code{g^{-1}(x) = max(0,x)}. For this specification, \code{a} must be greater than or equal to 1.
-}
-\references{
-Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
 }
 \author{
 Devin S. Johnson

@@ -45,9 +45,12 @@ Rcpp::List ctmc_n2ll_arma(
 
   // Start forward loop
   arma::rowvec v(ns);
-  arma::rowvec phi = delta;
   arma::sp_mat P(ns,ns);
   // arma::vec Lt(ns);
+  arma::rowvec phi = delta % ((1-p)*L.row(0)) + (p/ns)*v;
+  u = accu(phi);
+  log_lik_v(0) = log(u);
+  phi = phi/u;
   
   // Start Forward alg loop (index = i)
   for(int i=1; i<N; i++){

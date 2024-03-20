@@ -1,7 +1,6 @@
 #' @title Fit CTMC movement model to telemetry data
 #' @param walk_data A design data list produced by the function \code{\link{make_walk_data}}.
-#' @param model_parameters Model formula for the detection and movement portions
-#' of the MMPP model. 
+#' @param model_parameters A named list giving specifications for the model. See \code{\link[walk]{ctmc_control}}. 
 #' @param pen_fun An optional penalty function. Should be on the scale of a log-prior distribution.
 #' @param hessian Logical. Should the Hessian matrix be calculated to obtain the parameter
 #' variance-covariance matrix.
@@ -17,32 +16,12 @@
 #' package developers. 
 #' @param ... Additional arguments passed to the optimization function 
 #' \code{\link[optimx]{optimr}} from the \code{\link[optimx]{optimx-package}}.
-#' @details The argument \code{model_parameters} is a named list of items to specify the structure of the model. The elements are 
-#' \itemize{
-#'  \item `q_r = list(form=~1, link="soft_plus", a=1)` The model specification for the residency portion of the model.
-#'  \item `q_m = list(form=~1, link="soft_plus", a=1)` The model specification for the movement portion of the model.
-#'  \item `p` Logical. Whether or not to include a zero-inflation parameter for the location observation model. 
-#'  \item `delta` If not `NULL`, this should be a vector providing the probabilities that the animal is located 
-#'  in a given cell on the first location. If left as `NULL` a uniform probability will be used, i.e., inverse of the number of cells.
-#'  \item `form` Is the form of the rate model. One of `"mult"` (multiplicative residency rate times movement rate), 
-#'  `"add"` (additive residency and movement rates), and `"sde"` (stochastic differential equation approximation).
-#'  \item `norm` Logical. Should the movement rate be normalize to sum to 1 over the cells to which the animal can move. i.e., 
-#'  `q_{ij} = lambda_i * pi_{ij}` where `sum_j pi_{ij} = 1`. This is the parameterization suggested by Hewitt et al. (2023). 
-#' }
-#' For the residency and movement rate models with `"soft_plus"` links, the `a` parameter detemines the approximation to 
-#' a hard plus function, i.e., as `a` becomes large the soft plus function converges to `g^{-1}(x) = max(0,x)`. For this specification, `a` must be greater than or equal to 1.
-#' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
 #' @author Devin S. Johnson
 #' @import optimx dplyr numDeriv
 #' @importFrom stats ppois qlogis
 #' @export
 fit_ctmc <- function(walk_data, 
-                     model_parameters = list(
-                       q_r = list(form=~1, link="soft_plus", a=1),
-                       q_m = list(form=~1, link="soft_plus", a=1),
-                       p = FALSE, delta=NULL, form="mult",
-                       norm = TRUE
-                     ), 
+                     model_parameters = ctmc_control(), 
                      pen_fun = NULL, hessian=TRUE, reals=FALSE, start=NULL, method="nlminb", 
                      fit=TRUE, eq_prec = 1.0e-8, debug=0, ...){
   
@@ -62,11 +41,16 @@ fit_ctmc <- function(walk_data,
     par_map$logit_p <- ncol(X_q_m) + ncol(X_q_r) + 1
   }
   
-  # if(is.null(model_parameters$delta)){
-  #   delta <- walk_data$L[1,]
-  # }
-  # delta <- delta/sum(delta)
-  # 
+  delta <- model_parameters$delta
+  if(is.numeric(delta)){
+    if(length(delta) != nrow(walk_data$q_r)) stop("The length of 'delta' vector is not equal to the number of cells.")
+    delta <- delta/sum(delta)
+  }
+  if(delta=="uniform"){
+    delta <- rep(1,nrow(walk_data$q_r))
+    delta <- delta/sum(delta)
+  }
+
   if(is.null(model_parameters$q_r$link)){
     link_r <- "soft_plus"
   } else{
@@ -121,7 +105,7 @@ fit_ctmc <- function(walk_data,
     ns = nrow(walk_data$q_r),
     dt = walk_data$times$dt,
     L = walk_data$L,
-    delta = model_parameters$delta,
+    delta = delta,
     ### Q
     from = as.integer(walk_data$q_m$from_cellx-1),
     to = as.integer(walk_data$q_m$cellx-1),
@@ -188,12 +172,12 @@ fit_ctmc <- function(walk_data,
   
   par <- as.vector(opt$par)
   beta <- get_betas(par, V, data_list)
-  if(reals){
-    message('Calculating real parameter values...')  
-    reals <- get_reals(par, V, data_list, walk_data, model_parameters)
-  } else{
-    reals <- NULL
-  }
+  # if(reals){
+  #   message('Calculating real parameter values...')  
+  #   reals <- get_reals(par, V, data_list, walk_data, model_parameters)
+  # } else{
+  #   reals <- NULL
+  # }
   
   
   if(!hessian) V <- NULL
@@ -203,7 +187,7 @@ fit_ctmc <- function(walk_data,
     vcov = V,
     log_lik = -0.5*opt$value,
     aic = opt$value + 2*length(par),
-    results = list(beta = beta, real = reals),
+    results = beta, #list(beta = beta, real = reals),
     opt = opt,
     start = start,
     data_list = data_list,

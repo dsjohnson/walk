@@ -28,16 +28,12 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     p = 0
   }
   
-  if(is.null(data_list$delta)){
-    delta <- walk_data$L[1,]
-  } else if(data_list$delta=="stationary"){
+  if(data_list$delta=="stationary"){
     delta <- get_lim_ud(list(par = par, data_list = data_list))
-    delta <- delta$ud *  walk_data$L[1,]
-  } else {
-    delta <- delta
+    delta <- delta$ud
+    delta <- delta/sum(delta)
   }
-  delta <- delta/sum(delta)
-
+  
   
   if(debug==2) browser()
   
