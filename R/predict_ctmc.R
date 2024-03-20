@@ -51,6 +51,13 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, debug=0, ...){
     p <- 0
   }
   
+  if(fit$data_list$delta=="stationary"){
+      delta <- get_lim_ud(fit)$ud
+      delta <- delta/sum(delta)
+  } else{
+    delta <- data_list$delta
+  }
+  
   link <- ifelse(fit$data_list$link=="soft_plus", 1, 0)
   if(debug==2) browser()
   #(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec = 1.0e-8, trunc_tol = 1.0e-8, link = 1L, row_sweep = TRUE)
@@ -61,7 +68,7 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, debug=0, ...){
     ns=data_list$ns, 
     from_to=from_to, 
     Xb_q_r=Xb_q_r, Xb_q_m=Xb_q_m, p=p, 
-    delta = matrix(data_list$delta, nrow=1),
+    delta = matrix(delta, nrow=1),
     eq_prec = data_list$eq_prec, 
     link_r = which(data_list$link_r==c("soft_plus", "log")),
     link_m = which(data_list$link_m==c("soft_plus", "log")),
