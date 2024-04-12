@@ -28,10 +28,12 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     p = 0
   }
   
-  if(data_list$delta=="stationary"){
+  if(is.character(data_list$delta) && data_list$delta=="stationary"){
     delta <- get_lim_ud(list(par = par, data_list = data_list))
     delta <- delta$ud
     delta <- delta/sum(delta)
+  } else{
+    delta <- data_list$delta
   }
   
   
@@ -47,8 +49,8 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     p = p,
     delta = matrix(delta, nrow=1),
     eq_prec = data_list$eq_prec,
-    link_r = which(data_list$link_r==c("soft_plus", "log")),
-    link_m = which(data_list$link_m==c("soft_plus", "log")),
+    link_r = which(data_list$link_r==c("soft_plus", "log", "logit")),
+    link_m = which(data_list$link_m==c("soft_plus", "log", "logit")),
     form = which(data_list$form==c("mult", "add", "sde")),
     a_r = data_list$a_r,
     a_m = data_list$a_m,

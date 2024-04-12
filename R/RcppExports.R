@@ -9,16 +9,16 @@ ctmc_predict_arma <- function(L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta,
     .Call(`_walk_ctmc_predict_arma`, L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec, trunc_tol, link_r, link_m, form, a_r, a_m, k, norm)
 }
 
+logit <- function(x, L = 0.0, U = 0.0) {
+    .Call(`_walk_logit`, x, L, U)
+}
+
 soft_plus <- function(x, a = 1.0) {
     .Call(`_walk_soft_plus`, x, a)
 }
 
 hard_plus <- function(x) {
     .Call(`_walk_hard_plus`, x)
-}
-
-trimmed_logistic <- function(x, a = 0.0, b = 1.0) {
-    .Call(`_walk_trimmed_logistic`, x, a, b)
 }
 
 phi_exp_lnG <- function(phi, lnG, prec = 1.0e-8) {

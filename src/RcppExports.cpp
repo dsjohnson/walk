@@ -65,6 +65,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// logit
+arma::vec logit(const arma::vec& x, const double& L, const double& U);
+RcppExport SEXP _walk_logit(SEXP xSEXP, SEXP LSEXP, SEXP USEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const double& >::type L(LSEXP);
+    Rcpp::traits::input_parameter< const double& >::type U(USEXP);
+    rcpp_result_gen = Rcpp::wrap(logit(x, L, U));
+    return rcpp_result_gen;
+END_RCPP
+}
 // soft_plus
 arma::vec soft_plus(const arma::vec& x, const double& a);
 RcppExport SEXP _walk_soft_plus(SEXP xSEXP, SEXP aSEXP) {
@@ -85,19 +98,6 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
     rcpp_result_gen = Rcpp::wrap(hard_plus(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// trimmed_logistic
-arma::vec trimmed_logistic(const arma::vec& x, const double& a, const double& b);
-RcppExport SEXP _walk_trimmed_logistic(SEXP xSEXP, SEXP aSEXP, SEXP bSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const double& >::type a(aSEXP);
-    Rcpp::traits::input_parameter< const double& >::type b(bSEXP);
-    rcpp_result_gen = Rcpp::wrap(trimmed_logistic(x, a, b));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -199,9 +199,9 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_walk_ctmc_n2ll_arma", (DL_FUNC) &_walk_ctmc_n2ll_arma, 16},
     {"_walk_ctmc_predict_arma", (DL_FUNC) &_walk_ctmc_predict_arma, 18},
+    {"_walk_logit", (DL_FUNC) &_walk_logit, 3},
     {"_walk_soft_plus", (DL_FUNC) &_walk_soft_plus, 2},
     {"_walk_hard_plus", (DL_FUNC) &_walk_hard_plus, 1},
-    {"_walk_trimmed_logistic", (DL_FUNC) &_walk_trimmed_logistic, 3},
     {"_walk_phi_exp_lnG", (DL_FUNC) &_walk_phi_exp_lnG, 3},
     {"_walk_load_Q_mult", (DL_FUNC) &_walk_load_Q_mult, 9},
     {"_walk_load_Q_add", (DL_FUNC) &_walk_load_Q_add, 8},

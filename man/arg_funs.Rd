@@ -6,13 +6,13 @@
 \alias{ctmc_control}
 \title{Define specifics for model structure and fitting control}
 \usage{
-ctmc_model(form = ~1, link = "soft_plus", a = 1)
+ctmc_model(form = ~1, link = "soft_plus", a = 1, L = 0, U = 0)
 
 ctmc_control(
   q_r = ctmc_model(),
   q_m = ctmc_model(),
   p = FALSE,
-  delta = NULL,
+  delta = "uniform",
   form = "mult",
   norm = TRUE
 )

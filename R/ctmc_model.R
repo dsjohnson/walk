@@ -19,20 +19,23 @@
 #' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
 
 #' @export
-ctmc_model <- function(form=~1, link="soft_plus", a=1){
-    list(
-      form = form,
-      link = link,
-      a = a
-    )
+ctmc_model <- function(form=~1, link="soft_plus", a=1, L=0, U=0){
+  if(link=="logit" & U==0) stop("U>0 and U>L must be specified when using the logit link.") 
+  out <- list(
+    form = form, link = link, a = a, L=L, U=U
+  )
+  class(out) <- c("ctmc_mod","list")
+  return(out)
 }
 
 #' @name arg_funs
 #' @export
 ctmc_control <- function(q_r = ctmc_model(), q_m=ctmc_model(), 
-                          p=FALSE, delta=NULL, form="mult", norm=TRUE){
-  list(
+                         p=FALSE, delta="uniform", form="mult", norm=TRUE){
+  out <- list(
     q_r = q_r, q_m=q_m, 
     p=p, delta=delta, form=form, norm=norm
   )
+  class(out) <- c("ctmc_cont","list")
+  return(out)
 }
