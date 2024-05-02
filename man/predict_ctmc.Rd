@@ -4,7 +4,14 @@
 \alias{predict_ctmc}
 \title{Predict Movement Path From Fitted CTMC Model}
 \usage{
-predict_ctmc(fit, walk_data, aux_timestamp = NULL, debug = 0, ...)
+predict_ctmc(
+  fit,
+  walk_data,
+  aux_timestamp = NULL,
+  trunc_tol = 1e-08,
+  debug = 0,
+  ...
+)
 }
 \arguments{
 \item{fit}{A fitted model object produced by \code{\link[walk]{fit_ctmc}}}
@@ -12,6 +19,8 @@ predict_ctmc(fit, walk_data, aux_timestamp = NULL, debug = 0, ...)
 \item{walk_data}{A design data list produced by the function \code{\link{make_walk_data}}.}
 
 \item{aux_timestamp}{Additional POSIX times for which location prediction is desired.}
+
+\item{trunc_tol}{Level for truncating small location prediction probabilities.}
 
 \item{debug}{Developer debugging.}
 

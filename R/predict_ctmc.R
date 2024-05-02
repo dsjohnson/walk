@@ -2,6 +2,7 @@
 #' @param fit A fitted model object produced by \code{\link[walk]{fit_ctmc}}
 #' @param walk_data A design data list produced by the function \code{\link{make_walk_data}}.
 #' @param aux_timestamp Additional POSIX times for which location prediction is desired.
+#' @param trunc_tol Level for truncating small location prediction probabilities. 
 #' @param debug Developer debugging. 
 #' @param ... Aditional arguments passed to internal function \code{ctmc_predict_arma}. 
 #' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
@@ -9,7 +10,7 @@
 #' @import optimx dplyr numDeriv
 #' @importFrom stats ppois qlogis
 #' @export
-predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, debug=0, ...){
+predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, trunc_tol=1.0e-8, debug=0, ...){
   if(debug==1) browser()
   data_list <- fit$data_list
   times <- walk_data$times
@@ -70,6 +71,7 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, debug=0, ...){
     Xb_q_r=Xb_q_r, Xb_q_m=Xb_q_m, p=p, 
     delta = matrix(delta, nrow=1),
     eq_prec = data_list$eq_prec, 
+    trunc_tol = trunc_tol,
     link_r = which(data_list$link_r==c("soft_plus", "log")),
     link_m = which(data_list$link_m==c("soft_plus", "log")),
     form = which(data_list$form==c("mult", "add", "sde")),
