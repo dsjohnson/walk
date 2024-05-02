@@ -12,6 +12,7 @@
 #' @param fit Logical. Should the likelihood be optimized?
 #' @param eq_prec Error rate of matrix exponential calculation. Defaults to \code{1.0e-8}. This is 
 #' a generous value. If the model is running slow, you can try reducing it to, say, \code{1.0e-4}.
+#' @param check_rho Check if rho is too big for uniformitazation calculation of exp{Qt}. Value is the size for which rho is too big, causing likelihood calculation error. 
 #' @param debug Integer from 1-4. Opens browser() at various points in the function call. Mostly for 
 #' package developers. 
 #' @param ... Additional arguments passed to the optimization function 
@@ -23,7 +24,7 @@
 fit_ctmc <- function(walk_data, 
                      model_parameters = ctmc_control(), 
                      pen_fun = NULL, hessian=TRUE, reals=FALSE, start=NULL, method="nlminb", 
-                     fit=TRUE, eq_prec = 1.0e-8, debug=0, ...){
+                     fit=TRUE, eq_prec = 1.0e-8, check_rho=NULL, debug=0, ...){
   
   if(debug==1) browser()
   # cell_idx_df <- select(walk_data$q_r, cell, cellx) %>% distinct()
@@ -133,9 +134,9 @@ fit_ctmc <- function(walk_data,
   # ctmc_n2ll(par, data_list)
   
   if(is.null(pen_fun)){
-    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, debug=0, ...)}
+    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, check_rho=check_rho, debug=0, ...)}
   } else{
-    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, debug=0, ...) - 2*pen_fun(par)}
+    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, check_rho=check_rho, debug=0, ...) - 2*pen_fun(par)}
   }
   
   if(debug==2) browser()
@@ -149,7 +150,7 @@ fit_ctmc <- function(walk_data,
     opt <- optimx::optimr(par=par_start, fn=obj_fun, method=method, data_list=data_list, ...)
     
     if(opt$convergence!=0){
-      message("There was a problem with optimization... See output 'optimx' object.")
+     warning("There might be a problem with optimization... See output 'optimx' object.")
       # return(list(opt=opt, data_list=data_list))
       # hessian <- FALSE
       # V <- NULL

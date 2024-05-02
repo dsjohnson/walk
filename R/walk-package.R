@@ -12,6 +12,24 @@ NULL
 ###
 ### Misc functions
 ###
+
+#' @title Soft-plus function
+#' @param x numeric value
+#' @param a scale parameter, `a` must be >1.
+#' @export
+softPlus <- function(x, a = 1.0) {
+  soft_plus(x, a)
+}
+
+#' @title General inverse logit function
+#' @param x numeric value
+#' @param L Lower bound
+#' @param U Upper bound
+#' @export
+gen_invLogit <- function(x, L = 0.0, U = 1.0){
+  logit(x, L = L, U =U)
+}
+
 # mcheck_cols <- function(Xm){
 #   ind1 <- apply(Xm, 2, sd)!=0
 #   v <- colnames(Xm)

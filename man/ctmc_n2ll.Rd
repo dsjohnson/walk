@@ -4,12 +4,14 @@
 \alias{ctmc_n2ll}
 \title{Evaluate movement MMPP log-likelihood}
 \usage{
-ctmc_n2ll(par, data_list, debug = 0, ...)
+ctmc_n2ll(par, data_list, check_rho = NULL, debug = 0, ...)
 }
 \arguments{
 \item{par}{Parameter vector}
 
 \item{data_list}{List of required data objects to evaluate likelihood}
+
+\item{check_rho}{Check if rho is too big for uniformitazation calculation of exp{Q}. Value is the size of rho to check.}
 
 \item{debug}{For developers only, leave in the default setting.}
 

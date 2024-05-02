@@ -87,7 +87,7 @@ make_q_data_sf <- function(cell_data, cell_name,...){
     cell_name <- "cell"
     cell_data$cell <- 1:nrow(cell_data)
   }
-  cell_data$cellx <- as.integer(factor(cell_data[[cell_name]]))
+  cell_data$cellx <- 1:nrow(cell_data) #as.integer(factor(cell_data[[cell_name]]))
   cell_data <- cell_data %>% rename(cell=.data[[cell_name]])
   ### Make Q_r data
   q_r_data <- cell_data %>% st_drop_geometry()

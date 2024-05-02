@@ -51,7 +51,7 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, debug=0, ...){
     p <- 0
   }
   
-  if(fit$data_list$delta=="stationary"){
+  if(is.character(data_list$delta) && data_list$delta=="stationary"){
       delta <- get_lim_ud(fit)$ud
       delta <- delta/sum(delta)
   } else{

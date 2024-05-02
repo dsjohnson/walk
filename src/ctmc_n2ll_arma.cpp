@@ -42,7 +42,9 @@ Rcpp::List ctmc_n2ll_arma(
   } else if(form==3){
     Q = load_Q_sde(from_to, Xb_q_r, Xb_q_m, ns, k, a_r);
   }
-
+  double qii = abs(Q.diag()).max();
+ arma::vec rho(N);
+  
   // Start forward loop
   arma::rowvec v(ns);
   arma::sp_mat P(ns,ns);
@@ -54,29 +56,33 @@ Rcpp::List ctmc_n2ll_arma(
   
   // Start Forward alg loop (index = i)
   for(int i=1; i<N; i++){
-      v = phi_exp_lnG(phi, Q*dt(i), eq_prec);
-      v = v % ((1-p)*L.row(i)) + (p/ns)*v;
-      u = accu(v);
-      // if(u==0){
-        // log_lik_v(i) = log(u);
-        // v = phi_exp_lnG(phi, Qt);
-        // arma::rowvec Lrow;
-        // Lrow = L.row(i);
-        // return Rcpp::List::create(
-        //   Rcpp::Named("i") = i+1,
-        //   Rcpp::Named("log_lik_v") = log_lik_v,
-        //   Rcpp::Named("v") = v,
-        //   Rcpp::Named("Lrow") = Lrow
-        // );
-      // }
-      log_lik_v(i) = log(u);
-      phi = v/u;
+    rho(i) = R::qpois(eq_prec, qii*dt(i), true, false);
+    v = phi_exp_lnG(phi, Q*dt(i), eq_prec);
+    v = v % ((1-p)*L.row(i)) + (p/ns)*v;
+    u = accu(v);
+    // if(u==0){
+    // log_lik_v(i) = log(u);
+    // v = phi_exp_lnG(phi, Qt);
+    // arma::rowvec Lrow;
+    // Lrow = L.row(i);
+    // return Rcpp::List::create(
+    //   Rcpp::Named("i") = i+1,
+    //   Rcpp::Named("log_lik_v") = log_lik_v,
+    //   Rcpp::Named("v") = v,
+    //   Rcpp::Named("Lrow") = Lrow
+    // );
+    // }
+    log_lik_v(i) = log(u);
+    phi = v/u;
   } // end i
+  
+  //Rcout << "max rho: " << rho.max() << "\n";
   
   double n2ll = -2*accu(log_lik_v);
   
   return Rcpp::List::create(
     Rcpp::Named("log_lik_v") = log_lik_v,
+    Rcpp::Named("rho") = rho,
     Rcpp::Named("n2ll") = n2ll
   );
   

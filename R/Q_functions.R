@@ -13,7 +13,6 @@ get_Q <- function(fit, sparse=TRUE){
   Xb_q_r <- dl$X_q_r %*% beta_q_r
   Xb_q_m <- dl$X_q_m %*% beta_q_m
   from_to <- t(cbind(dl$from, dl$to))
-  link <- which(dl$link==c("soft_plus", "log"))
   if(dl$form=="mult"){
     Q <- load_Q_mult(from_to, Xb_q_r, Xb_q_m, dl$ns, 
                      link_r = which(dl$link_r==c("soft_plus", "log")), 
