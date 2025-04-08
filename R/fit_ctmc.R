@@ -51,7 +51,7 @@ fit_ctmc <- function(walk_data,
     delta <- rep(1,nrow(walk_data$q_r))
     delta <- delta/sum(delta)
   }
-
+  
   if(is.null(model_parameters$q_r$link)){
     link_r <- "soft_plus"
   } else{
@@ -62,7 +62,8 @@ fit_ctmc <- function(walk_data,
   } else{
     link_m <- model_parameters$q_m$link
   }
-  if(!all(c(link_r,link_m)%in%c("soft_plus","log","logit"))) stop("The 'link' objects in must be either 'soft_plus' or 'log'.")
+  if(!link_r%in%c("soft_plus","log","logit")) stop("The 'link_r' objects in must be either 'soft_plus', 'log', or 'logit'")
+  if(!link_m%in%c("soft_plus","log")) stop("The 'link_m' objects in must be either 'soft_plus' or 'log'.")
   
   
   form <- model_parameters$form
@@ -77,6 +78,22 @@ fit_ctmc <- function(walk_data,
     a_r <- 1
   } else{
     a_r <- model_parameters$q_r$a
+  }
+  
+  if(is.null(model_parameters$q_r$U)){
+    u_r <- 0
+  } else{
+    u_r <- model_parameters$q_r$U
+  }
+  if(is.null(model_parameters$q_r$L)){
+    l_r <- 0
+  } else{
+    l_r <- model_parameters$q_r$L
+  }
+  if(link_r=="logit"){
+    if(l_r < 0) stop("L for the logit link must be >= 0")
+    if(u_r <= 0) stop("U for the logit link must be > 0")
+    if(u_r <= l_r) stop("U must be > L for the logit link")
   }
   if(is.null(model_parameters$q_m$a)){
     a_m <- 1
@@ -115,10 +132,12 @@ fit_ctmc <- function(walk_data,
     par_map = par_map,
     eq_prec = eq_prec,
     link_r=link_r,
-    link_m=link_m,
-    form=form,
     a_r = a_r,
+    l_r = l_r,
+    u_r = u_r,
+    link_m=link_m,
     a_m = a_m,
+    form=form,
     k = k,
     norm = norm,
     cell_map = walk_data$q_r[,c("cell","cellx")]
@@ -150,7 +169,7 @@ fit_ctmc <- function(walk_data,
     opt <- optimx::optimr(par=par_start, fn=obj_fun, method=method, data_list=data_list, ...)
     
     if(opt$convergence!=0){
-     warning("There might be a problem with optimization... See output 'optimx' object.")
+      warning("There might be a problem with optimization... See output 'optimx' object.")
       # return(list(opt=opt, data_list=data_list))
       # hessian <- FALSE
       # V <- NULL

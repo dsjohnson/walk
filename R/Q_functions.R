@@ -15,10 +15,10 @@ get_Q <- function(fit, sparse=TRUE){
   from_to <- t(cbind(dl$from, dl$to))
   if(dl$form=="mult"){
     Q <- load_Q_mult(from_to, Xb_q_r, Xb_q_m, dl$ns, 
-                     link_r = which(dl$link_r==c("soft_plus", "log")), 
+                     link_r = which(dl$link_r==c("soft_plus", "log","logit")), 
+                     a_r = dl$a_r, l_r=dl$l_r, u_r=dl$u_r,
                      link_m = which(dl$link_m==c("soft_plus", "log")), 
-                     a_r = dl$a_r, a_m=dl$a_m,
-                     dl$norm)
+                     a_m=dl$a_m, dl$norm)
   } else if(dl$form=="add"){
     Q <- load_Q_add(from_to, Xb_q_r, Xb_q_m, dl$ns,  
                     link_r = which(dl$link_r==c("soft_plus", "log")), 

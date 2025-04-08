@@ -12,7 +12,7 @@ using namespace arma;
 
 //[[Rcpp::export]]
 arma::vec logit(const arma::vec& x, const double& L=0.0, const double& U=0.0) {
-  if(L < 0.0) stop("'L' must be > 0 for logistic contraint.");
+  if(L < 0.0) stop("'L' must be >= 0 for logistic contraint.");
   if(U<=0.0 | U<=L) stop("'U' must be >0 and >L for logistic contraint.");
   arma::vec out(x);
   for(int i=0; i<x.size(); i++){
@@ -50,16 +50,18 @@ arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const doub
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
-                         const int& ns, const int& link_r=1, const int& link_m=1, 
-                         const double& a_r=1.0, const double& a_m=1.0, 
+                         const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0,
+                         const int& link_m=1, const double& a_m=1.0, 
                          const bool& norm=true) {
   arma::sp_mat Qr(ns,ns);
   arma::sp_mat Q(ns, ns);
   arma::vec Qm_vals;
   if(link_r==1){
     Qr.diag() = soft_plus(Xb_q_r, a_r);
-  } else{
+  } else if(link_r==2){
     Qr.diag() = trunc_exp(Xb_q_r);
+  } else {
+    Qr.diag() = logit(Xb_q_r, l_r, u_r);
   }
   if(link_m==1){
     Qm_vals = soft_plus(Xb_q_m, a_m);
@@ -84,17 +86,18 @@ arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, con
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
-                        const int& ns, const int& link_r=1, const int& link_m=1, 
-                        const double& a_r=1.0, const double& a_m=1.0) {
+                        const int& ns, const int& link_r=1,  const double& a_r=1.0, 
+                        const int& link_m=1, const double& a_m=1.0) {
   arma::vec aij(from_to.n_cols, fill::ones);
   arma::sp_mat A(from_to, aij, ns, ns);  
   arma::sp_mat Dfill(ns,ns);
   arma::vec Z_vals;
   if(link_r==1){
     Dfill.diag() = soft_plus(Xb_q_r, a_r);
-  } else{
+  } else {
     Dfill.diag() = trunc_exp(Xb_q_r);
-  }
+  } 
+  
   if(link_m==1){
     Z_vals = soft_plus(Xb_q_m, a_m);
   } else{
@@ -110,7 +113,7 @@ arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, cons
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
-                        const int& ns, const double& k,const double& a_r=1.0) {
+                        const int& ns, const double& k, const double& a_r=1.0) {
   
   // make D
   arma::vec aij(from_to.n_cols, fill::ones);
