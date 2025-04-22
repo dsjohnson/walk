@@ -40,6 +40,18 @@ arma::vec hard_plus(const arma::vec& x){
   return out;
 } 
 
+//[[Rcpp::export]]
+arma::sp_mat clip_Q(const arma::sp_mat& Q, const double& clip) {
+  int n = Q.n_rows;
+  arma::sp_mat Cm(n, n);
+  arma::vec qvals = -1*arma::vec(Q.diag());
+  arma::vec cvals(n, fill::value(clip));
+  Cm.diag() = min(cvals, qvals) / qvals; 
+  arma::sp_mat out = Cm*Q;
+  return out;
+}
+
+
 
 
 // [[Rcpp::export]]

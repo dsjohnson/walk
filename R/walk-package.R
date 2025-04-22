@@ -1,4 +1,4 @@
-#' @rawNamespace useDynLib(walk, .registration=TRUE); useDynLib(walk_TMBExports)
+#' @rawNamespace useDynLib(walk, .registration=TRUE);
 #' @keywords internal
 "_PACKAGE"
 
@@ -7,6 +7,18 @@
 ## usethis namespace: start
 ## usethis namespace: end
 NULL
+
+.onAttach <- function(library, pkgname)
+{
+  info <-utils::packageDescription(pkgname)
+  package <- info$Package
+  version <- info$Version
+  date <- info$Date
+  packageStartupMessage(
+    paste(package, version, paste("(",date, ")", sep=""))
+  )
+}
+
 
 
 ###
@@ -29,6 +41,38 @@ softPlus <- function(x, a = 1.0) {
 gen_invLogit <- function(x, L = 0.0, U = 1.0){
   logit(x, L = L, U =U)
 }
+
+
+#' @import Matrix
+create_Q <- function(n, density = 0.2, rate_range = c(0.1, 1.0)) {
+  if (n < 2) stop("n must be at least 2")
+  
+  # Number of possible off-diagonal elements
+  num_off_diag <- n * (n - 1)
+  num_to_fill <- ceiling(num_off_diag * density)
+  
+  # Generate random (i, j) pairs where i ≠ j
+  possible_indices <- which(matrix(1, n, n) - diag(n) == 1, arr.ind = TRUE)
+  sampled_indices <- possible_indices[sample(nrow(possible_indices), num_to_fill), , drop = FALSE]
+  
+  # Generate random rates
+  rates <- runif(num_to_fill, rate_range[1], rate_range[2])
+  
+  # Create sparse matrix with off-diagonal values
+  Q <- sparseMatrix(
+    i = sampled_indices[, 1],
+    j = sampled_indices[, 2],
+    x = rates,
+    dims = c(n, n)
+  )
+  
+  # Set diagonals so each row sums to zero
+  row_sums <- rowSums(Q)
+  Q <- Q - Diagonal(n, row_sums)
+  
+  return(Q)
+}
+
 
 
 

@@ -105,6 +105,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// clip_Q
+arma::sp_mat clip_Q(const arma::sp_mat& Q, const double& clip);
+RcppExport SEXP _walk_clip_Q(SEXP QSEXP, SEXP clipSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< const double& >::type clip(clipSEXP);
+    rcpp_result_gen = Rcpp::wrap(clip_Q(Q, clip));
+    return rcpp_result_gen;
+END_RCPP
+}
 // phi_exp_lnG
 arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat& lnG, const double& prec);
 RcppExport SEXP _walk_phi_exp_lnG(SEXP phiSEXP, SEXP lnGSEXP, SEXP precSEXP) {
@@ -208,6 +220,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_walk_logit", (DL_FUNC) &_walk_logit, 3},
     {"_walk_soft_plus", (DL_FUNC) &_walk_soft_plus, 2},
     {"_walk_hard_plus", (DL_FUNC) &_walk_hard_plus, 1},
+    {"_walk_clip_Q", (DL_FUNC) &_walk_clip_Q, 2},
     {"_walk_phi_exp_lnG", (DL_FUNC) &_walk_phi_exp_lnG, 3},
     {"_walk_load_Q_mult", (DL_FUNC) &_walk_load_Q_mult, 11},
     {"_walk_load_Q_add", (DL_FUNC) &_walk_load_Q_add, 8},

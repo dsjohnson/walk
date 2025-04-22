@@ -21,6 +21,10 @@ hard_plus <- function(x) {
     .Call(`_walk_hard_plus`, x)
 }
 
+clip_Q <- function(Q, clip) {
+    .Call(`_walk_clip_Q`, Q, clip)
+}
+
 phi_exp_lnG <- function(phi, lnG, prec = 1.0e-8) {
     .Call(`_walk_phi_exp_lnG`, phi, lnG, prec)
 }
