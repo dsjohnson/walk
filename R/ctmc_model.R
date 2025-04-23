@@ -16,6 +16,7 @@
 #' @param form The form of the rate matrix entries. Can be one of: `"mult"` for residency times movement, i.e., q_{ij} = q_r(i) * pi_m(i,j), `"add"` for a model of 
 #' the form q_{ij} = q_r(i) + pi_m(i,j), and `"sde"` for a Langevin diffusion approximation. The `"sde"` is very similar to the additive model. 
 #' @param norm Should the movement portion be adjusted to sum to 1. This is the parameterization suggested by Hewitt et al. (2023). 
+#' @param clip Positive value for the maximum movement rate for all cells. All cells with modeled total movement rates above this value will be truncated to `clip`.
 #' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
 
 #' @export
@@ -31,11 +32,12 @@ ctmc_model <- function(form=~1, link="soft_plus", a=1, L=0, U=0){
 #' @name arg_funs
 #' @export
 ctmc_control <- function(q_r = ctmc_model(), q_m=ctmc_model(), 
-                         p=FALSE, delta="uniform", form="mult", norm=TRUE){
+                         p=FALSE, delta="uniform", form="mult", norm=TRUE, clip=0){
   if(q_m$link=="logit") stop("'logit' link not implimented for movement portion of the CTMC model. Please select either 'log' or 'soft_plus'")
+  if(clip<0) stop("'clip' must be > 0!")
   out <- list(
     q_r = q_r, q_m=q_m, 
-    p=p, delta=delta, form=form, norm=norm
+    p=p, delta=delta, form=form, norm=norm, clip=clip
   )
   class(out) <- c("ctmc_cont","list")
   return(out)

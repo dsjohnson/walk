@@ -14,7 +14,8 @@ ctmc_control(
   p = FALSE,
   delta = "uniform",
   form = "mult",
-  norm = TRUE
+  norm = TRUE,
+  clip = 0
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ overlap likely locations.}
 stationary distribution implied by the parameters, or a numeric vector the same length as the number of cells.}
 
 \item{norm}{Should the movement portion be adjusted to sum to 1. This is the parameterization suggested by Hewitt et al. (2023).}
+
+\item{clip}{Positive value for the maximum movement rate for all cells. All cells with modeled total movement rates above this value will be truncated to \code{clip}.}
 }
 \description{
 Define specifics for model structure and fitting control

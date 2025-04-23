@@ -75,7 +75,8 @@ ctmc_n2ll <- function(par, data_list, check_rho=NULL, debug=0, ...){
     a_m = data_list$a_m,
     form = which(data_list$form==c("mult", "add", "sde")),
     k = data_list$k,
-    norm = data_list$norm
+    norm = data_list$norm,
+    clip = data_list$clip
   )$n2ll
   
 }

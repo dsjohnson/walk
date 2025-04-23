@@ -64,7 +64,7 @@ arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const doub
 arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
                          const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0,
                          const int& link_m=1, const double& a_m=1.0, 
-                         const bool& norm=true) {
+                         const bool& norm=true, const double& clip=0.0) {
   arma::sp_mat Qr(ns,ns);
   arma::sp_mat Q(ns, ns);
   arma::vec Qm_vals;
@@ -92,14 +92,15 @@ arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, con
     arma::sp_mat qii = sum(Q,1);
     Q.diag() -= 1*qii;
   }
-
+  
+  if(clip>0 & link_r!=3) Q = clip_Q(Q, clip);
   return Q;
 }
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
                         const int& ns, const int& link_r=1,  const double& a_r=1.0, 
-                        const int& link_m=1, const double& a_m=1.0) {
+                        const int& link_m=1, const double& a_m=1.0, const double& clip=0.0) {
   arma::vec aij(from_to.n_cols, fill::ones);
   arma::sp_mat A(from_to, aij, ns, ns);  
   arma::sp_mat Dfill(ns,ns);
@@ -119,6 +120,8 @@ arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, cons
   arma::sp_mat Z(from_to, Z_vals, ns, ns);
   arma::sp_mat Q = D + Z;
   Q.diag() -= sum(Q,1);
+  
+  if(clip>0.0) Q = clip_Q(Q, clip);
   return Q;
 }
 

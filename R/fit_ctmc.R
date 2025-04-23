@@ -118,6 +118,9 @@ fit_ctmc <- function(walk_data,
   norm <- model_parameters$norm
   if(is.null(norm) | !is.logical(norm)) norm <- TRUE
   
+  clip <- model_parameters$clip
+  if(is.null(clip) || clip<0) clip <- 0
+  
   data_list <- list(
     N = nrow(walk_data$L),
     ns = nrow(walk_data$q_r),
@@ -140,6 +143,7 @@ fit_ctmc <- function(walk_data,
     form=form,
     k = k,
     norm = norm,
+    clip = clip,
     cell_map = walk_data$q_r[,c("cell","cellx")]
   )
   

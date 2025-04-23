@@ -18,12 +18,12 @@ get_Q <- function(fit, sparse=TRUE){
                      link_r = which(dl$link_r==c("soft_plus", "log","logit")), 
                      a_r = dl$a_r, l_r=dl$l_r, u_r=dl$u_r,
                      link_m = which(dl$link_m==c("soft_plus", "log")), 
-                     a_m=dl$a_m, dl$norm)
+                     a_m=dl$a_m, dl$norm, dl$clip)
   } else if(dl$form=="add"){
     Q <- load_Q_add(from_to, Xb_q_r, Xb_q_m, dl$ns,  
                     link_r = which(dl$link_r==c("soft_plus", "log")), 
                     link_m = which(dl$link_m==c("soft_plus", "log")), 
-                    a_r = dl$a_r, a_m=dl$a_m) 
+                    a_r = dl$a_r, a_m=dl$a_m, dl$clip) 
   } else{
     Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$ns, dl$k, dl$a_r) 
   }

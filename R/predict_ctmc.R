@@ -78,7 +78,8 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, trunc_tol=1.0e-8, d
     a_r = data_list$a_r,
     a_m = data_list$a_m,
     k = data_list$k,
-    norm = data_list$norm
+    norm = data_list$norm,
+    clip = data_list$clip
   )
   
   times$row = 1:nrow(Lpred)

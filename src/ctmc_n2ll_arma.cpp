@@ -9,8 +9,8 @@ using namespace arma;
 
 // function prototypes
 arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8);
-arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0, const int& link_m=1, const double& a_m=1.0, const bool& norm=true);
-arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const double& a_r=1.0, const int& link_m=1, const double& a_m=1.0);
+arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0, const int& link_m=1, const double& a_m=1.0, const bool& norm=true, const double& clip=0.0);
+arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const double& a_r=1.0, const int& link_m=1, const double& a_m=1.0, const double& clip=0.0);
 arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const double& k,const double& a_r=1.0);
 
 
@@ -33,16 +33,17 @@ Rcpp::List ctmc_n2ll_arma(
     const double& a_m = 1.0, 
     const int& form = 1,
     const double& k = 2.0,
-    const bool& norm=true)
+    const bool& norm=true,
+    const double& clip=0.0)
 {
   int N = dt.size();
   double u = 0.0;
   arma::vec log_lik_v(N);
   arma::sp_mat Q;
   if(form==1){
-    Q = load_Q_mult(from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, l_r, u_r, link_m, a_m, norm);
+    Q = load_Q_mult(from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, l_r, u_r, link_m, a_m, norm, clip);
   } else if(form==2){
-    Q = load_Q_add(from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, link_m, a_m);
+    Q = load_Q_add(from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, link_m, a_m, clip);
   } else if(form==3){
     Q = load_Q_sde(from_to, Xb_q_r, Xb_q_m, ns, k, a_r);
   }
