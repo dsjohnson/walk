@@ -12,7 +12,7 @@
 #' @param fit Logical. Should the likelihood be optimized?
 #' @param eq_prec Error rate of matrix exponential calculation. Defaults to \code{1.0e-8}. This is 
 #' a generous value. If the model is running slow, you can try reducing it to, say, \code{1.0e-4}.
-#' @param check_rho Check if rho is too big for uniformitazation calculation of exp{Qt}. Value is the size for which rho is too big, causing likelihood calculation error. 
+#' @param check_rho Check if rho is too big for uniformitazation calculation of exp\{Qt\}. Value is the size for which rho is too big, causing likelihood calculation error. 
 #' @param debug Integer from 1-4. Opens browser() at various points in the function call. Mostly for 
 #' package developers. 
 #' @param ... Additional arguments passed to the optimization function 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/proc_telem.R
 \name{proc_telem}
 \alias{proc_telem}
-\title{Convert {ctmm} telemetry data object to a {terra} \code{SpatRaster} stack}
+\title{Convert \code{ctmm} telemetry data object to a \code{SpatRaster} stack from the \code{terra} package.}
 \usage{
 proc_telem(
   data,
@@ -14,7 +14,7 @@ proc_telem(
 )
 }
 \arguments{
-\item{data}{A \code{telemetry} object from the {ctmm} package}
+\item{data}{A \code{telemetry} object from the \code{ctmm} package}
 
 \item{cell_data}{A \verb{\link[terra]\{SpatRaster\}} stack of covariates that will be used in CTMC
 movement modeling. Cells with \code{NA} values will be considered areas to the animal cannot travel, i.e.,
@@ -34,7 +34,7 @@ of the telemetry data.}
 \item{trunc}{The smallest probability value that is considered to be > 0. Defaults to 1.0e-8.}
 }
 \description{
-Convert {ctmm} telemetry data object to a {terra} \code{SpatRaster} stack
+Convert \code{ctmm} telemetry data object to a \code{SpatRaster} stack from the \code{terra} package.
 }
 \details{
 This function takes the HDOP information in the \code{telemetry} object to

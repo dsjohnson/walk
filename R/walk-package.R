@@ -44,6 +44,7 @@ gen_invLogit <- function(x, L = 0.0, U = 1.0){
 
 
 #' @import Matrix
+#' @importFrom stats qpois runif
 create_Q <- function(n, density = 0.2, rate_range = c(0.1, 1.0)) {
   if (n < 2) stop("n must be at least 2")
   

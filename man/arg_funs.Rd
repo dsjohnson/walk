@@ -19,8 +19,8 @@ ctmc_control(
 )
 }
 \arguments{
-\item{form}{The form of the rate matrix entries. Can be one of: \code{"mult"} for residency times movement, i.e., q_{ij} = q_r(i) * pi_m(i,j), \code{"add"} for a model of
-the form q_{ij} = q_r(i) + pi_m(i,j), and \code{"sde"} for a Langevin diffusion approximation. The \code{"sde"} is very similar to the additive model.}
+\item{form}{The form of the rate matrix entries. Can be one of: \code{"mult"} for residency times movement, i.e., q_\{ij\} = q_r(i) * pi_m(i,j), \code{"add"} for a model of
+the form q_\{ij\} = q_r(i) + pi_m(i,j), and \code{"sde"} for a Langevin diffusion approximation. The \code{"sde"} is very similar to the additive model.}
 
 \item{link}{A link funtion for the residency or movement model. One of \code{"soft_plus"} or \code{"log"}.}
 

@@ -42,7 +42,7 @@ form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.}
 \item{eq_prec}{Error rate of matrix exponential calculation. Defaults to \code{1.0e-8}. This is
 a generous value. If the model is running slow, you can try reducing it to, say, \code{1.0e-4}.}
 
-\item{check_rho}{Check if rho is too big for uniformitazation calculation of exp{Qt}. Value is the size for which rho is too big, causing likelihood calculation error.}
+\item{check_rho}{Check if rho is too big for uniformitazation calculation of exp\{Qt\}. Value is the size for which rho is too big, causing likelihood calculation error.}
 
 \item{debug}{Integer from 1-4. Opens browser() at various points in the function call. Mostly for
 package developers.}

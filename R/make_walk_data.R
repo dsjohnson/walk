@@ -1,11 +1,11 @@
 #' @title Produce design data for use in fitting MMPP movement models
 #' @param proc_data A sparse matrix with rows corresponding to time steps and columns corresponding to cells. 
 #' The entries are probabilities that the animal is located in the corresponding cell and time.
-#' @param cell_data A `SpatRaster` object from the {terra} package.
+#' @param cell_data A `SpatRaster` object from the `terra` package.
 #' @param grad A character vector of names of `cell_data` layers for which gradient covariates will be constructed.
-#' @param rast_mask Raster mask for inaccessible cells when \code{cell_data} is of type \code{SpatRaster} from the \code{terra} package. This is ignored
-#' if \code{cell_data} is an \code{POLYGON} data frame from the \code{sf} package.
-#' @param directions ---.
+#' @param rast_mask Raster mask for inaccessible cells when `cell_data` is of type `SpatRaster` from the `terra` package. This is ignored
+#' if \code{cell_data} is an `POLYGON` data frame from the `sf` package.
+#' @param directions Neighborhood structure, one of `"rook"` or `"queen"`.
 #' @param debug Debugging level: 1-3 mainly for package developers.
 #' @param ... Ignored arguments.
 #' @import dplyr 

@@ -2,7 +2,7 @@
 #' @param par Parameter vector
 #' @param data_list List of required data objects to evaluate likelihood
 #' @param debug For developers only, leave in the default setting.
-#' @param check_rho Check if rho is too big for uniformitazation calculation of exp{Q}. Value is the size of rho to check. 
+#' @param check_rho Check if rho is too big for uniformitazation calculation of exp\{Q\}. Value is the size of rho to check. 
 #' @param ... Extra wiggle room for ignored arguments.
 #' @importFrom stats aggregate plogis
 #' @importFrom Matrix diag

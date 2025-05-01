@@ -15,8 +15,8 @@
 #' overlap likely locations. 
 #' @param delta Vector of probabilities for the initial location. Can be one of `"uniform"` for a uniform distribution over all cells, `"stationary"` to use the 
 #' stationary distribution implied by the parameters, or a numeric vector the same length as the number of cells. 
-#' @param form The form of the rate matrix entries. Can be one of: `"mult"` for residency times movement, i.e., q_{ij} = q_r(i) * pi_m(i,j), `"add"` for a model of 
-#' the form q_{ij} = q_r(i) + pi_m(i,j), and `"sde"` for a Langevin diffusion approximation. The `"sde"` is very similar to the additive model. 
+#' @param form The form of the rate matrix entries. Can be one of: `"mult"` for residency times movement, i.e., q_\{ij\} = q_r(i) * pi_m(i,j), `"add"` for a model of 
+#' the form q_\{ij\} = q_r(i) + pi_m(i,j), and `"sde"` for a Langevin diffusion approximation. The `"sde"` is very similar to the additive model. 
 #' @param norm Should the movement portion be adjusted to sum to 1. This is the parameterization suggested by Hewitt et al. (2023). 
 #' @param clip Positive value for the maximum movement rate for all cells. All cells with modeled total movement rates above this value will be truncated to `clip`.
 #' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.

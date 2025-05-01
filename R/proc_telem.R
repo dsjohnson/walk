@@ -1,12 +1,12 @@
 
-#' @title Convert {ctmm} telemetry data object to a {terra} `SpatRaster` stack
-#' @param data A `telemetry` object from the {ctmm} package
+#' @title Convert `ctmm` telemetry data object to a `SpatRaster` stack from the `terra` package.
+#' @param data A `telemetry` object from the `ctmm` package
 #' @param cell_data A `\link[terra]{SpatRaster}` stack of covariates that will be used in CTMC 
 #' movement modeling. Cells with `NA` values will be considered areas to the animal cannot travel, i.e., 
 #' likelihood surfaces will be `0` for those cells.
 #' @param time_unit Unit of measurement for numeric conversion of the POSIX timestamps 
-#' in the telemetry data. Defaults to \code{"hours"}. Can specify, e.g., 
-#'  \code{"seconds"} or \code{"days"}
+#' in the telemetry data. Defaults to `"hours"`. Can specify, e.g., 
+#'  `"seconds"` or `"days"`
 #' @param return_type Type of object returned. One if `"data.frame"`, `"sparse"` (sparse matrix), 
 #' `"matrix_df"` (matrix form of `"data.frame"`), or `"dense"` (dense matrix).
 #' @param max_err The maximum error in meters. If unspecified it will be set to
