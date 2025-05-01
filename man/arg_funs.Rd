@@ -27,6 +27,10 @@ the form q_{ij} = q_r(i) + pi_m(i,j), and \code{"sde"} for a Langevin diffusion 
 \item{a}{Scale parameter for the \code{"soft_plus"} link function. Ignored for \code{link="log"}. The \code{a} parameter determines the approximation to
 a hard plus function, i.e., as \code{a} becomes large the soft plus function converges to \code{g^{-1}(x) = max(0,x)}. For this specification, \code{a} must be greater than or equal to 1.}
 
+\item{L}{Lower bound for general logit link}
+
+\item{U}{Upper bound for general logit link}
+
 \item{q_r}{A named list for the residency model. Must contain elements: \code{form}, \code{link}, and \code{a}.
 The easiest way to construct this is the \code{ctmc_model} function.}
 

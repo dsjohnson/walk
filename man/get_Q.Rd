@@ -7,7 +7,7 @@
 get_Q(fit, sparse = TRUE)
 }
 \arguments{
-\item{fit}{A moveMMPP fitted model object from \code{\link[moveMMPP]{fit_mmpp_dir}}.}
+\item{fit}{A fitted model object from \code{\link[walk]{fit_ctmc}}.}
 
 \item{sparse}{Logical. Should the matrix be returned in a sparse format from the \code{Matrix}
 package. Defaults to \code{sparse = TRUE}.}

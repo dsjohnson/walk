@@ -1,5 +1,5 @@
 #' @title Get movement transition matrix from fitted moveMMP object
-#' @param fit A moveMMPP fitted model object from \code{\link[moveMMPP]{fit_mmpp_dir}}.
+#' @param fit A fitted model object from \code{\link[walk]{fit_ctmc}}.
 #' @param sparse Logical. Should the matrix be returned in a sparse format from the \code{Matrix}
 #' package. Defaults to \code{sparse = TRUE}.
 #' @author Devin S. Johnson
@@ -32,7 +32,7 @@ get_Q <- function(fit, sparse=TRUE){
 }
 
 #' @title Get the limiting utilization distribution of the CTMC movement process
-#' @param fit A moveMMPP fitted model object from \code{\link[moveMMPP]{fit_mmpp_dir}}.
+#' @param fit A fitted model object from \code{\link[walk]{fit_ctmc}}.
 #' @param hpd A vector of probabilities. Will return columns with highest probability area for each specified probability. E.g., 
 #' \code{hpd=c(0.5, 0.95)} will return 2 extra columns with 50 and 95% HPD densities. 
 #' @param method Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}.

@@ -6,6 +6,8 @@
 #' @param link A link funtion for the residency or movement model. One of `"soft_plus"` or `"log"`.
 #' @param a Scale parameter for the `"soft_plus"` link function. Ignored for `link="log"`. The `a` parameter determines the approximation to 
 #' a hard plus function, i.e., as `a` becomes large the soft plus function converges to `g^{-1}(x) = max(0,x)`. For this specification, `a` must be greater than or equal to 1.
+#' @param L Lower bound for general logit link
+#' @param U Upper bound for general logit link
 #' @param q_r A named list for the residency model. Must contain elements: `form`, `link`, and `a`. 
 #' The easiest way to construct this is the `ctmc_model` function.
 #' @param q_m A named list for the movement portion of the model. See `q_r`.
@@ -18,7 +20,6 @@
 #' @param norm Should the movement portion be adjusted to sum to 1. This is the parameterization suggested by Hewitt et al. (2023). 
 #' @param clip Positive value for the maximum movement rate for all cells. All cells with modeled total movement rates above this value will be truncated to `clip`.
 #' @references Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.
-
 #' @export
 ctmc_model <- function(form=~1, link="soft_plus", a=1, L=0, U=0){
   if(link=="logit" & U==0) stop("U>0 and U>L must be specified when using the logit link.") 

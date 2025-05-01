@@ -76,9 +76,9 @@ create_Q <- function(n, density = 0.2, rate_range = c(0.1, 1.0)) {
 
 
 
-#' @title Penlization specification
-#' @param type Character vector describing the type of penalty, one of `"lasso"` or `"ridge"`
-#' @param group_dm A design matrix for grouping shrinkage 
+# #' @title Penlization specification
+# #' @param type Character vector describing the type of penalty, one of `"lasso"` or `"ridge"`
+# #' @param group_dm A design matrix for grouping shrinkage 
 
 # mcheck_cols <- function(Xm){
 #   ind1 <- apply(Xm, 2, sd)!=0

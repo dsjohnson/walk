@@ -7,7 +7,7 @@
 get_lim_ud(fit = NULL, hpd = NULL, method = "lu", ...)
 }
 \arguments{
-\item{fit}{A moveMMPP fitted model object from \code{\link[moveMMPP]{fit_mmpp_dir}}.}
+\item{fit}{A fitted model object from \code{\link[walk]{fit_ctmc}}.}
 
 \item{hpd}{A vector of probabilities. Will return columns with highest probability area for each specified probability. E.g.,
 \code{hpd=c(0.5, 0.95)} will return 2 extra columns with 50 and 95\% HPD densities.}
