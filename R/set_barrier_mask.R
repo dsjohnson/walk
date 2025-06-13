@@ -3,7 +3,7 @@
 #' @param y A `SpatRaster` where cells will be set to `NA` that are inside the polygon object.
 #' @param overlap The amount of overlap betwen the raster cell and polygon such that the cell is considered 
 #' "inside" the polygon. Defaults to `overlap = 0.95`. If `overlap = 1` then a cell has to be completely inside the 
-#' polygon to be maked.
+#' polygon to be masked.
 #' @export
 #' @importFrom sf st_geometry_type
 #' @importFrom terra vect geomtype rasterize
