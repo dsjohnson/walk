@@ -13,7 +13,7 @@ set_barrier_mask(x, y, overlap = 0.95)
 
 \item{overlap}{The amount of overlap betwen the raster cell and polygon such that the cell is considered
 "inside" the polygon. Defaults to \code{overlap = 0.95}. If \code{overlap = 1} then a cell has to be completely inside the
-polygon to be maked.}
+polygon to be masked.}
 }
 \description{
 Denote cells where the animal cannot travel

@@ -156,9 +156,9 @@ fit_ctmc <- function(walk_data,
   # ctmc_n2ll(par, data_list)
   
   if(is.null(pen_fun)){
-    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, check_rho=check_rho, debug=0, ...)}
+    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, debug=0, ...)}
   } else{
-    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, check_rho=check_rho, debug=0, ...) - 2*pen_fun(par)}
+    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, debug=0, ...) - 2*pen_fun(par)}
   }
   
   if(debug==2) browser()

@@ -1,12 +1,29 @@
 #define arma_64bit_word 1
+// #define ARMA_USE_SUPERLU 1
+
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[rcpp::plugins(cpp11)]] 
 #include <expQ2.h>
 
+
 using namespace Rcpp;
 using namespace expQ2;
 using namespace arma;
+
+
+//[[Rcpp::export]]
+arma::vec stat_dist(const arma::sp_mat& Q) {
+  arma::sp_mat Qt = Q.t();
+  uword n = Qt.n_rows;
+  Qt.row(n-1).ones();
+  arma::vec b(n, fill::zeros);
+  b(n-1) = 1;
+  arma::vec pi = arma::spsolve(Qt, b, "lapack");
+  double total = accu(pi);
+  pi = pi/total;
+  return pi;
+}
 
 
 

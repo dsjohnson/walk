@@ -16,7 +16,7 @@ arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, cons
 
 // Calculate likelihood ///////////////
 // [[Rcpp::export]]
-Rcpp::List ctmc_n2ll_arma(
+double ctmc_n2ll_arma(
     const arma::sp_mat& L, 
     const arma::vec& dt, 
     const int& ns,
@@ -85,10 +85,6 @@ Rcpp::List ctmc_n2ll_arma(
   
   double n2ll = -2*accu(log_lik_v);
   
-  return Rcpp::List::create(
-    Rcpp::Named("log_lik_v") = log_lik_v,
-    Rcpp::Named("rho") = rho,
-    Rcpp::Named("n2ll") = n2ll
-  );
+  return n2ll;
   
 }

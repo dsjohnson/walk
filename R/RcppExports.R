@@ -9,6 +9,10 @@ ctmc_predict_arma <- function(L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta,
     .Call(`_walk_ctmc_predict_arma`, L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip)
 }
 
+stat_dist <- function(Q) {
+    .Call(`_walk_stat_dist`, Q)
+}
+
 logit <- function(x, L = 0.0, U = 0.0) {
     .Call(`_walk_logit`, x, L, U)
 }

@@ -75,7 +75,7 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     k = data_list$k,
     norm = data_list$norm,
     clip = data_list$clip
-  )$n2ll
+  )
   
 }
 

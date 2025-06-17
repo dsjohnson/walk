@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // ctmc_n2ll_arma
-Rcpp::List ctmc_n2ll_arma(const arma::sp_mat& L, const arma::vec& dt, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const double& p, const arma::rowvec& delta, const double& eq_prec, const int& link_r, const double& a_r, const double& l_r, const double& u_r, const int& link_m, const double& a_m, const int& form, const double& k, const bool& norm, const double& clip);
+double ctmc_n2ll_arma(const arma::sp_mat& L, const arma::vec& dt, const int& ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const double& p, const arma::rowvec& delta, const double& eq_prec, const int& link_r, const double& a_r, const double& l_r, const double& u_r, const int& link_m, const double& a_m, const int& form, const double& k, const bool& norm, const double& clip);
 RcppExport SEXP _walk_ctmc_n2ll_arma(SEXP LSEXP, SEXP dtSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP pSEXP, SEXP deltaSEXP, SEXP eq_precSEXP, SEXP link_rSEXP, SEXP a_rSEXP, SEXP l_rSEXP, SEXP u_rSEXP, SEXP link_mSEXP, SEXP a_mSEXP, SEXP formSEXP, SEXP kSEXP, SEXP normSEXP, SEXP clipSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -68,6 +68,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool& >::type norm(normSEXP);
     Rcpp::traits::input_parameter< const double& >::type clip(clipSEXP);
     rcpp_result_gen = Rcpp::wrap(ctmc_predict_arma(L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip));
+    return rcpp_result_gen;
+END_RCPP
+}
+// stat_dist
+arma::vec stat_dist(const arma::sp_mat& Q);
+RcppExport SEXP _walk_stat_dist(SEXP QSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type Q(QSEXP);
+    rcpp_result_gen = Rcpp::wrap(stat_dist(Q));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -221,6 +232,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_walk_ctmc_n2ll_arma", (DL_FUNC) &_walk_ctmc_n2ll_arma, 19},
     {"_walk_ctmc_predict_arma", (DL_FUNC) &_walk_ctmc_predict_arma, 21},
+    {"_walk_stat_dist", (DL_FUNC) &_walk_stat_dist, 1},
     {"_walk_logit", (DL_FUNC) &_walk_logit, 3},
     {"_walk_soft_plus", (DL_FUNC) &_walk_soft_plus, 2},
     {"_walk_hard_plus", (DL_FUNC) &_walk_hard_plus, 1},
