@@ -45,11 +45,3 @@ load_Q_sde <- function(from_to, Xb_q_r, Xb_q_m, ns, k, a_r = 1.0) {
     .Call(`_walk_load_Q_sde`, from_to, Xb_q_r, Xb_q_m, ns, k, a_r)
 }
 
-dense_to_sparse <- function(M, tol = 1.0e-8) {
-    .Call(`_walk_dense_to_sparse`, M, tol)
-}
-
-my_test <- function(v, Q, prec, renorm = TRUE, t2 = TRUE, checks = TRUE) {
-    .Call(`_walk_my_test`, v, Q, prec, renorm, t2, checks)
-}
-

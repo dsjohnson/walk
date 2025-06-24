@@ -203,13 +203,17 @@ fit_ctmc <- function(walk_data,
   # }
   
   
-  if(!hessian) V <- NULL
+  if(!hessian){
+    V <- NULL
+    H <- NULL
+  }
   
   out <- list(
     par = par,
     vcov = V,
     log_lik = -0.5*opt$value,
     aic = opt$value + 2*length(par),
+    hessian = 0.5*H,
     results = beta, #list(beta = beta, real = reals),
     opt = opt,
     start = start,

@@ -200,34 +200,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dense_to_sparse
-arma::sp_mat dense_to_sparse(const arma::mat& M, const double& tol);
-RcppExport SEXP _walk_dense_to_sparse(SEXP MSEXP, SEXP tolSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
-    Rcpp::traits::input_parameter< const double& >::type tol(tolSEXP);
-    rcpp_result_gen = Rcpp::wrap(dense_to_sparse(M, tol));
-    return rcpp_result_gen;
-END_RCPP
-}
-// my_test
-arma::mat my_test(const arma::mat v, SEXP Q, double prec, bool renorm, bool t2, bool checks);
-RcppExport SEXP _walk_my_test(SEXP vSEXP, SEXP QSEXP, SEXP precSEXP, SEXP renormSEXP, SEXP t2SEXP, SEXP checksSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat >::type v(vSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type Q(QSEXP);
-    Rcpp::traits::input_parameter< double >::type prec(precSEXP);
-    Rcpp::traits::input_parameter< bool >::type renorm(renormSEXP);
-    Rcpp::traits::input_parameter< bool >::type t2(t2SEXP);
-    Rcpp::traits::input_parameter< bool >::type checks(checksSEXP);
-    rcpp_result_gen = Rcpp::wrap(my_test(v, Q, prec, renorm, t2, checks));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_walk_ctmc_n2ll_arma", (DL_FUNC) &_walk_ctmc_n2ll_arma, 19},
@@ -241,8 +213,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_walk_load_Q_mult", (DL_FUNC) &_walk_load_Q_mult, 12},
     {"_walk_load_Q_add", (DL_FUNC) &_walk_load_Q_add, 9},
     {"_walk_load_Q_sde", (DL_FUNC) &_walk_load_Q_sde, 6},
-    {"_walk_dense_to_sparse", (DL_FUNC) &_walk_dense_to_sparse, 2},
-    {"_walk_my_test", (DL_FUNC) &_walk_my_test, 6},
     {NULL, NULL, 0}
 };
 
