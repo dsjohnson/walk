@@ -46,9 +46,9 @@ make_q_data_rast <- function(cell_data, grad=NULL, rast_mask=NULL, directions="r
   q_m_data <- q_m_data %>% left_join(covs, by="from_cell")
   rm(covs)
   # browser()
-  q_m_data$dist <- with(q_m_data,sqrt((from_x-x)^2 + (from_y-y)^2))
-  q_m_data$w_x <- (q_m_data$x - q_m_data$from_x)/q_m_data$dist
-  q_m_data$w_y <- (q_m_data$y - q_m_data$from_y)/q_m_data$dist
+  q_m_data$h <- with(q_m_data,sqrt((from_x-x)^2 + (from_y-y)^2))
+  q_m_data$w_x <- (q_m_data$x - q_m_data$from_x)/q_m_data$h
+  q_m_data$w_y <- (q_m_data$y - q_m_data$from_y)/q_m_data$h
   
   if(!is.null(grad)){
     grad_df <- NULL

@@ -126,6 +126,7 @@ fit_ctmc <- function(walk_data,
     dt = walk_data$times$dt,
     L = walk_data$L,
     delta = delta,
+    hij=walk_data$q_m$h,
     ### Q
     from = as.integer(walk_data$q_m$from_cellx-1),
     to = as.integer(walk_data$q_m$cellx-1),

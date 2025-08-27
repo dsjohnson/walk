@@ -12,6 +12,14 @@ using namespace expQ2;
 using namespace arma;
 
 
+ // [[Rcpp::export]]
+ arma::sp_mat sp_mat_div(const arma::sp_mat X, const arma::sp_mat Y){
+   arma::sp_mat Yinv(Y);
+   Yinv.transform([](double val) {return (1.0/val);});
+   arma::sp_mat R = X % Yinv;
+   return R;
+ }
+
 //[[Rcpp::export]]
 arma::vec stat_dist(const arma::sp_mat& Q) {
   arma::sp_mat Qt = Q.t();
@@ -78,7 +86,7 @@ arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const doub
 }
 
 // [[Rcpp::export]]
-arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
+arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
                          const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0,
                          const int& link_m=1, const double& a_m=1.0, 
                          const bool& norm=true, const double& clip=0.0) {
@@ -114,52 +122,54 @@ arma::sp_mat load_Q_mult(const arma::umat& from_to, const arma::vec& Xb_q_r, con
   return Q;
 }
 
-// [[Rcpp::export]]
-arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
-                        const int& ns, const int& link_r=1,  const double& a_r=1.0, 
-                        const int& link_m=1, const double& a_m=1.0, const double& clip=0.0) {
-  arma::vec aij(from_to.n_cols, fill::ones);
-  arma::sp_mat A(from_to, aij, ns, ns);  
-  arma::sp_mat Dfill(ns,ns);
-  arma::vec Z_vals;
-  if(link_r==1){
-    Dfill.diag() = soft_plus(Xb_q_r, a_r);
-  } else {
-    Dfill.diag() = trunc_exp(Xb_q_r);
-  } 
-  
-  if(link_m==1){
-    Z_vals = soft_plus(Xb_q_m, a_m);
-  } else{
-    Z_vals = trunc_exp(Xb_q_m);
-  }
-  arma::sp_mat D = Dfill * A;
-  arma::sp_mat Z(from_to, Z_vals, ns, ns);
-  arma::sp_mat Q = D + Z;
-  Q.diag() -= sum(Q,1);
-  
-  if(clip>0.0) Q = clip_Q(Q, clip);
-  return Q;
-}
+// // [[Rcpp::export]]
+// arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
+//                         const int& ns, const int& link_r=1,  const double& a_r=1.0, 
+//                         const int& link_m=1, const double& a_m=1.0, const double& clip=0.0) {
+//   arma::vec aij(from_to.n_cols, fill::ones);
+//   arma::sp_mat A(from_to, aij, ns, ns);  
+//   arma::sp_mat Dfill(ns,ns);
+//   arma::vec Z_vals;
+//   if(link_r==1){
+//     Dfill.diag() = soft_plus(Xb_q_r, a_r);
+//   } else {
+//     Dfill.diag() = trunc_exp(Xb_q_r);
+//   } 
+//   
+//   if(link_m==1){
+//     Z_vals = soft_plus(Xb_q_m, a_m);
+//   } else{
+//     Z_vals = trunc_exp(Xb_q_m);
+//   }
+//   arma::sp_mat D = Dfill * A;
+//   arma::sp_mat Z(from_to, Z_vals, ns, ns);
+//   arma::sp_mat Q = D + Z;
+//   Q.diag() -= sum(Q,1);
+//   
+//   if(clip>0.0) Q = clip_Q(Q, clip);
+//   return Q;
+// }
 
 
 // [[Rcpp::export]]
-arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
-                        const int& ns, const double& k, const double& a_r=1.0) {
+arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& hij,
+                        const int& ns, const double& k, const double& clip=0.0) {
   
   // make D
   arma::vec aij(from_to.n_cols, fill::ones);
   arma::sp_mat A(from_to, aij, ns, ns);  
   arma::sp_mat Dfill(ns,ns);
-  Dfill.diag() = soft_plus(Xb_q_r, a_r);
+  Dfill.diag() = trunc_exp(Xb_q_r);
+  arma::sp_mat h(from_to, hij, ns, ns); 
   arma::sp_mat D = Dfill * A;
+  D = sp_mat_div(D, k*h%h);
   D.diag() -= 1*sum(D,1);
-  D /= k;
   // make Z
   arma::sp_mat Z(from_to, hard_plus(Xb_q_m), ns, ns);
+  Z = sp_mat_div(Z, (k/2)*h);
   Z.diag() -= 1*sum(Z,1);
-  Z /= (k/2.0);
   
   arma::sp_mat Q = D + Z;
+  if(clip>0.0) Q = clip_Q(Q, clip);
   return Q;
 }
