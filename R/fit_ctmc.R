@@ -67,7 +67,7 @@ fit_ctmc <- function(walk_data,
   
   form <- model_parameters$form
   if(!is.null(form)){
-    if(!form%in%c("mult","add","sde")) stop("The 'form' object in must be either 'mult','add', or 'sde'.")
+    if(!form%in%c("mult","sde")) stop("The 'form' object in must be either 'mult',or 'sde'.")
   } else{
     form<- "mult"
   }
