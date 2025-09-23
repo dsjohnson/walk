@@ -10,7 +10,8 @@ proc_telem(
   time_unit = "hours",
   return_type = "sparse",
   max_err = NULL,
-  trunc = 1e-08
+  trunc = 1e-08,
+  return_inadmissible = FALSE
 )
 }
 \arguments{
@@ -32,6 +33,8 @@ in the telemetry data. Defaults to \code{"hours"}. Can specify, e.g.,
 of the telemetry data.}
 
 \item{trunc}{The smallest probability value that is considered to be > 0. Defaults to 1.0e-8.}
+
+\item{return_inadmissible}{Logical. If there are locations outside the admissible areas of movement return the observations and raster cell numbers.}
 }
 \description{
 Convert \code{ctmm} telemetry data object to a \code{SpatRaster} stack from the \code{terra} package.

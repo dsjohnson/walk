@@ -13,7 +13,7 @@ ctmc_control(
   q_m = ctmc_model(),
   p = FALSE,
   delta = "uniform",
-  form = "exp",
+  form = "mult",
   norm = TRUE,
   clip = 0
 )

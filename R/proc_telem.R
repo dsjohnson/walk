@@ -13,6 +13,7 @@
 #' 4 times the maximum error standard deviation as determined by the UERE and HDOP
 #' of the telemetry data.
 #' @param trunc The smallest probability value that is considered to be > 0. Defaults to 1.0e-8.
+#' @param  return_inadmissible Logical. If there are locations outside the admissible areas of movement return the observations and raster cell numbers.
 #' @details This function takes the HDOP information in the `telemetry` object to 
 #' produce a `SpatRaster` likelihood surface over the `SpatRaster` defined by 
 #' the `raster` argument for each location. This can then be passed to 
@@ -24,7 +25,7 @@
 #' @importFrom ctmm uere
 #' @importFrom methods as
 #' @export
-proc_telem <- function(data, cell_data, time_unit="hours", return_type="sparse", max_err=NULL, trunc=1.0e-8){
+proc_telem <- function(data, cell_data, time_unit="hours", return_type="sparse", max_err=NULL, trunc=1.0e-8, return_inadmissible=FALSE){
   # Check arguments
   if(!inherits(data, "telemetry")) stop("'data' must be a ctmm::telemery object!")
   if(!inherits(cell_data, "SpatRaster")) stop("'cell_data' must be a terra::SpatRaster object!")
@@ -59,6 +60,7 @@ proc_telem <- function(data, cell_data, time_unit="hours", return_type="sparse",
   
   lik_list <- vector("list", nrow(xy))
   out <- NULL
+  out_inad <- NULL
   zero_ind <- FALSE
   cell_data_val <- values(cell_data)
   
@@ -75,14 +77,18 @@ proc_telem <- function(data, cell_data, time_unit="hours", return_type="sparse",
     )
     m <- ifelse(is.na(cell_data_val[t_err[[i]]]), 0, 1)
     dfi[,3] <- dfi[,3]*m
+    if(sum(dfi[,3]) <=sqrt(.Machine$double.eps)){
+      zero_ind <- TRUE
+      out_inad <- rbind(out_inad, dfi)
+      next
+    }
     dfi[,3] <- dfi[,3]/sum(dfi[,3])
     dfi[,3] <- ifelse(dfi[,3]<trunc, 0, dfi[,3])
     dfi <- dfi[dfi[,3]>0,,drop=FALSE]
-    dfi[,3] <- dfi[,3]/sum(dfi[,3])
-    if(sum(dfi[,3]) <=sqrt(.Machine$double.eps)) zero_ind <- TRUE
     out <- rbind(out, dfi)
   }
   
+  if(return_inadmissible) return(out_inad)
   if(zero_ind) warning("Some observations have likelihood values of 0 in all 'cell_data' cells!")
   
   times <- data.frame(obs=1:nrow(data), timestamp = data$timestamp)
