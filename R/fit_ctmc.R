@@ -116,6 +116,7 @@ fit_ctmc <- function(walk_data,
   
   norm <- model_parameters$norm
   if(is.null(norm) | !is.logical(norm)) norm <- TRUE
+  if(model_parameters$form=="sde") norm <- FALSE
   
   clip <- model_parameters$clip
   if(is.null(clip) || clip<0) clip <- 0

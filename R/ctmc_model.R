@@ -37,6 +37,7 @@ ctmc_control <- function(q_r = ctmc_model(), q_m=ctmc_model(),
   if(q_m$link=="logit") stop("'logit' link not implimented for movement portion of the CTMC model. Please select either 'log' or 'soft_plus'")
   if(clip<0) stop("'clip' must be > 0!")
   if(length(attr(terms(q_r$form),"term.labels"))>0 & form=="sde") stop("The SDE cannot handle q_r forms other than ~1 at this time.")
+  if(form=="sde") norm <- FALSE
   out <- list(
     q_r = q_r, q_m=q_m, 
     p=p, delta=delta, form=form, norm=norm, clip=clip

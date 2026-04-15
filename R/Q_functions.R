@@ -27,7 +27,7 @@ get_Q <- function(fit, sparse=TRUE){
   #                   a_r = dl$a_r, a_m=dl$a_m, dl$clip) 
   # } 
     else{
-    Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$ns, dl$k, dl$a_r) 
+    Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$hij, dl$ns, dl$k, dl$clip) 
   }
   if(!sparse) Q <- as.matrix(Q)
   return(Q)
