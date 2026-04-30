@@ -1,7 +1,7 @@
 Package: walk
 Title: Model Animal Movement With Continuous-Time Markov Chains
-Version: 0.0.0.934
-Date: April 15, 2026
+Version: 0.0.0.935
+Date: April 29, 2026
 Authors@R: 
     c(
     person("Devin S.", "Johnson", email="devin.johnson@noaa.gov", role = c("aut", "cre")),

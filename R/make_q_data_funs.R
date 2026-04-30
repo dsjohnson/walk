@@ -112,12 +112,12 @@ make_q_data_sf <- function(cell_data, cell_name,...){
 }
 
 
-get_grad <- function(r){
-  h <- res(r)
-  sa <- terra::terrain(r, v=c('slope', 'aspect'), unit="radians")
-  sa[["dx"]] <- h[1]*sa[['slope']]*sin(sa[['aspect']])
-  sa[["dy"]] <- h[2]*sa[['slope']]*cos(sa[['aspect']])
-  sa <- sa[[-c(1:2)]]
-  
-  return(sa)
-}
+# get_grad <- function(r){
+#   h <- res(r)
+#   sa <- terra::terrain(r, v=c('slope', 'aspect'), unit="radians")
+#   sa[["dx"]] <- h[1]*sa[['slope']]*sin(sa[['aspect']])
+#   sa[["dy"]] <- h[2]*sa[['slope']]*cos(sa[['aspect']])
+#   sa <- sa[[-c(1:2)]]
+#   
+#   return(sa)
+# }
