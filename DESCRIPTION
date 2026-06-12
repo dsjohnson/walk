@@ -1,6 +1,6 @@
 Package: walk
 Title: Model Animal Movement With Continuous-Time Markov Chains
-Version: 0.0.0.936
+Version: 0.0.0.937
 Date: May 1, 2026
 Authors@R: 
     c(

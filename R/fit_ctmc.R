@@ -4,8 +4,6 @@
 #' @param pen_fun An optional penalty function. Should be on the scale of a log-prior distribution.
 #' @param hessian Logical. Should the Hessian matrix be calculated to obtain the parameter
 #' variance-covariance matrix.
-#' @param reals Calculate real values for expected residency, cell transition probabilities, and 
-#' outlier proportion for observations.  
 #' @param start Optional starting values for the parameter must be a list of the 
 #' form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.
 #' @param method Optimization method. See \code{\link[optimx]{optimr}}
@@ -22,7 +20,7 @@
 #' @export
 fit_ctmc <- function(walk_data, 
                      model_parameters = ctmc_control(), 
-                     pen_fun = NULL, hessian=TRUE, reals=FALSE, start=NULL, method="nlminb", 
+                     pen_fun = NULL, hessian=TRUE, start=NULL, method="nlminb", 
                      fit=TRUE, eq_prec = 1.0e-8, debug=0, ...){
   
   if(debug==1) browser()
@@ -197,13 +195,6 @@ fit_ctmc <- function(walk_data,
   
   par <- as.vector(opt$par)
   beta <- get_betas(par, V, data_list)
-  # if(reals){
-  #   message('Calculating real parameter values...')  
-  #   reals <- get_reals(par, V, data_list, walk_data, model_parameters)
-  # } else{
-  #   reals <- NULL
-  # }
-  
   
   if(!hessian){
     V <- NULL

@@ -123,6 +123,7 @@ fill_in <- function(r){
 #' @importFrom terra focal
 #' @export
 raster_fill <- function(r){
+  . <- NULL
   nms <- names(r)
   r <- as.list(r)
   r <- sapply(r, \(x) fill_in(x)) %>% do.call(c,.)

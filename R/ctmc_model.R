@@ -31,6 +31,7 @@ ctmc_model <- function(form=~1, link="soft_plus", a=1, L=0, U=0){
 }
 
 #' @name arg_funs
+#' @importFrom stats terms
 #' @export
 ctmc_control <- function(q_r = ctmc_model(), q_m=ctmc_model(), 
                          p=FALSE, delta="uniform", form="mult", norm=TRUE, clip=0){

@@ -9,7 +9,6 @@ fit_ctmc(
   model_parameters = ctmc_control(),
   pen_fun = NULL,
   hessian = TRUE,
-  reals = FALSE,
   start = NULL,
   method = "nlminb",
   fit = TRUE,
@@ -27,9 +26,6 @@ fit_ctmc(
 
 \item{hessian}{Logical. Should the Hessian matrix be calculated to obtain the parameter
 variance-covariance matrix.}
-
-\item{reals}{Calculate real values for expected residency, cell transition probabilities, and
-outlier proportion for observations.}
 
 \item{start}{Optional starting values for the parameter must be a list of the
 form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.}
