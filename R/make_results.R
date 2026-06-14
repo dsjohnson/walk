@@ -118,6 +118,7 @@
 #' no standard errors will be provided for the real parameter estimates
 #' @param data_list The data list from a fitted model object
 #' @author Devin S. Johnson
+#' @importFrom stats pnorm
 #' @export
 
 get_betas <- function(par, V=NULL, data_list){
@@ -129,7 +130,9 @@ get_betas <- function(par, V=NULL, data_list){
   q_nms <- colnames(data_list$X_q_r)
   if(have_V){
     V_q_r <- as.matrix(V[qqq,qqq])
-    df_beta_q_r <- data.frame(parameter = q_nms, est=beta_q_r, se_beta=sqrt(diag(V_q_r)))
+    df_beta_q_r <- data.frame(parameter = q_nms, est=beta_q_r, stdErr=sqrt(diag(V_q_r)),
+                              z = beta_q_r/sqrt(diag(V_q_r)), 
+                              p_value=2*pnorm(-abs(beta_q_r/sqrt(diag(V_q_r)))) )
   } else{
     df_beta_q_r <- data.frame(parameter = q_nms, est=beta_q_r)
   }
@@ -141,7 +144,9 @@ get_betas <- function(par, V=NULL, data_list){
     q_nms <- colnames(data_list$X_q_m)
     if(have_V){
       V_q_m <- as.matrix(V[qqq,qqq])
-      df_beta_q_m <- data.frame(parameter = q_nms, est=beta_q_m, se_beta=sqrt(diag(V_q_m)))
+      df_beta_q_m <- data.frame(parameter = q_nms, est=beta_q_m, stdErr=sqrt(diag(V_q_m)),
+                                z = beta_q_m/sqrt(diag(V_q_m)), 
+                                p_value=2*pnorm(-abs(beta_q_m/sqrt(diag(V_q_m)))) )
     } else{
       df_beta_q_m <- data.frame(parameter = q_nms, est=beta_q_m)
     }
@@ -154,7 +159,9 @@ get_betas <- function(par, V=NULL, data_list){
     logit_p <- par[qqq]
     if(have_V){
       V_p <- as.matrix(V[qqq,qqq])
-      df_logit_p <- data.frame(parameter = "logit_p", est=logit_p, se_beta=sqrt(diag(V_p)))
+      df_logit_p <- data.frame(parameter = "logit_p", est=logit_p, stdErr=sqrt(diag(V_p)),
+                               z =logit_p/sqrt(diag(V_p)), 
+                               p_value=2*pnorm(-abs(logit_p/sqrt(diag(V_p)))))
     } else{
       df_logit_p <- data.frame(parameter = "logit_p", est=logit_p)
     }
