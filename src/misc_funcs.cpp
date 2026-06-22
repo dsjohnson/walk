@@ -12,13 +12,13 @@ using namespace expQ2;
 using namespace arma;
 
 
- // [[Rcpp::export]]
- arma::sp_mat sp_mat_div(const arma::sp_mat X, const arma::sp_mat Y){
-   arma::sp_mat Yinv(Y);
-   Yinv.transform([](double val) {return (1.0/val);});
-   arma::sp_mat R = X % Yinv;
-   return R;
- }
+// [[Rcpp::export]]
+arma::sp_mat sp_mat_div(const arma::sp_mat X, const arma::sp_mat Y){
+  arma::sp_mat Yinv(Y);
+  Yinv.transform([](double val) {return (1.0/val);});
+  arma::sp_mat R = X % Yinv;
+  return R;
+}
 
 //[[Rcpp::export]]
 arma::vec stat_dist(const arma::sp_mat& Q) {
@@ -76,8 +76,26 @@ arma::sp_mat clip_Q(const arma::sp_mat& Q, const double& clip) {
   return out;
 }
 
-
-
+/*
+// Try and add new expmAction package
+arma::mat cpp_execute_uniformization_time(const arma::sp_mat& Q, 
+                                          const arma::rowvec& v, 
+                                          double alpha_0, 
+                                          double t, 
+                                          double tolerance);
+// [[Rcpp::export]]
+arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat& lnG, const double& prec = 1.0e-8) {
+  // 1. Extract the diagonal elements of the sparse rate matrix to compute alpha_0
+  arma::vec diag_elements = lnG.diag();
+  double alpha_0 = arma::max(arma::abs(diag_elements));
+  // 2. Safely extract the first row of 'phi' as a dense row vector
+  arma::rowvec v_row = phi.row(0);
+  // 3. Execute your lightning-fast bare-metal uniformization engine
+  // We pass t = 1.0 here because the time scale is natively built into lnG
+  arma::mat out = cpp_execute_uniformization_time(lnG, v_row, alpha_0, 1.0, prec);
+  return out;
+}
+*/
 
 // [[Rcpp::export]]
 arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8) {
@@ -87,9 +105,9 @@ arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const doub
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
-                         const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0,
-                         const int& link_m=1, const double& a_m=1.0, 
-                         const bool& norm=true, const double& clip=0.0) {
+                    const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0,
+                    const int& link_m=1, const double& a_m=1.0, 
+                    const bool& norm=true, const double& clip=0.0) {
   arma::sp_mat Qr(ns,ns);
   arma::sp_mat Q(ns, ns);
   arma::vec Qm_vals;
