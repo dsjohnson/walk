@@ -1,10 +1,11 @@
 #' @title Get movement transition matrix from fitted moveMMP object
 #' @param fit A fitted model object from \code{\link[walk]{fit_ctmc}}.
+#' @param clip Logical. If truncation was used for the rate matrix during model fitting, should it be used here?
 #' @param sparse Logical. Should the matrix be returned in a sparse format from the \code{Matrix}
 #' package. Defaults to \code{sparse = TRUE}.
 #' @author Devin S. Johnson
 #' @export
-get_Q <- function(fit, sparse=TRUE){
+get_Q <- function(fit, clip=TRUE, sparse=TRUE){
   par <- fit$par
   dl <- fit$data_list
   par_map <- dl$par_map
@@ -13,12 +14,13 @@ get_Q <- function(fit, sparse=TRUE){
   Xb_q_r <- dl$X_q_r %*% beta_q_r
   Xb_q_m <- dl$X_q_m %*% beta_q_m
   from_to <- t(cbind(dl$from, dl$to))
+  clip <-clip*dl$clip
   if(dl$form=="mult"){
     Q <- load_Q(from_to, Xb_q_r, Xb_q_m, dl$ns, 
                      link_r = which(dl$link_r==c("soft_plus", "log","logit")), 
                      a_r = dl$a_r, l_r=dl$l_r, u_r=dl$u_r,
                      link_m = which(dl$link_m==c("soft_plus", "log")), 
-                     a_m=dl$a_m, dl$norm, dl$clip)
+                     a_m=dl$a_m, dl$norm, clip)
   } 
     # else if(dl$form=="add"){
   #   Q <- load_Q_add(from_to, Xb_q_r, Xb_q_m, dl$ns,  
@@ -27,7 +29,7 @@ get_Q <- function(fit, sparse=TRUE){
   #                   a_r = dl$a_r, a_m=dl$a_m, dl$clip) 
   # } 
     else{
-    Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$hij, dl$ns, dl$k, dl$clip) 
+    Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$hij, dl$ns, dl$k, clip) 
   }
   if(!sparse) Q <- as.matrix(Q)
   return(Q)

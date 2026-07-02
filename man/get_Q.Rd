@@ -4,10 +4,12 @@
 \alias{get_Q}
 \title{Get movement transition matrix from fitted moveMMP object}
 \usage{
-get_Q(fit, sparse = TRUE)
+get_Q(fit, clip = TRUE, sparse = TRUE)
 }
 \arguments{
 \item{fit}{A fitted model object from \code{\link[walk]{fit_ctmc}}.}
+
+\item{clip}{Logical. If truncation was used for the rate matrix during model fitting, should it be used here?}
 
 \item{sparse}{Logical. Should the matrix be returned in a sparse format from the \code{Matrix}
 package. Defaults to \code{sparse = TRUE}.}
