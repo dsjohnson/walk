@@ -14,7 +14,7 @@ get_Q <- function(fit, clip=TRUE, sparse=TRUE){
   Xb_q_r <- dl$X_q_r %*% beta_q_r
   Xb_q_m <- dl$X_q_m %*% beta_q_m
   from_to <- t(cbind(dl$from, dl$to))
-  clip <-clip*dl$clip
+  clip <- as.numeric(clip*dl$clip)
   if(dl$form=="mult"){
     Q <- load_Q(from_to, Xb_q_r, Xb_q_m, dl$ns, 
                      link_r = which(dl$link_r==c("soft_plus", "log","logit")), 
@@ -39,6 +39,7 @@ get_Q <- function(fit, clip=TRUE, sparse=TRUE){
 #' @param fit A fitted model object from \code{\link[walk]{fit_ctmc}}.
 #' @param hpd A vector of probabilities. Will return columns with highest probability area for each specified probability. E.g., 
 #' \code{hpd=c(0.5, 0.95)} will return 2 extra columns with 50 and 95% HPD densities. 
+#' @param clip If truncation was used for the rate matrix during model fitting, should it be used here?
 #' @param method Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}.
 #' @param ... Extra arguments to pass to \code{\link[rARPACK]{eigs}}
 #' @author Devin S. Johnson
@@ -46,8 +47,9 @@ get_Q <- function(fit, clip=TRUE, sparse=TRUE){
 #' @importFrom Matrix t lu expand Matrix
 #' @importFrom stats median
 #' @importFrom rARPACK eigs
-get_lim_ud <- function(fit=NULL, hpd=NULL, method="lu",...){
+get_lim_ud <- function(fit=NULL, hpd=NULL, clip=TRUE, method="lu",...){
   
+  clip <- as.numeric(clip*fit$data_list$clip)
   tQ <- t(get_Q(fit))
   
   if(method=="lu"){
