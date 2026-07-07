@@ -9,7 +9,7 @@ find_clip(f, prob = 0.9, upper = 1000)
 \arguments{
 \item{f}{Fraction of time unit in processed telemetry data}
 
-\item{prob}{Cummulative probability of residency time}
+\item{prob}{Cumulative probability of residency time}
 
 \item{upper}{The maximum value for the clip value}
 }

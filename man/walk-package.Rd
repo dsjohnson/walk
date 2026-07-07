@@ -11,5 +11,10 @@ Model animal movement using continuous-time Markov chain models.
 \author{
 \strong{Maintainer}: Devin S. Johnson \email{devin.johnson@noaa.gov}
 
+Authors:
+\itemize{
+  \item Devin S. Johnson \email{devin.johnson@noaa.gov}
+}
+
 }
 \keyword{internal}

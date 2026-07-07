@@ -10,7 +10,6 @@ Description: Model animal movement using continuous-time Markov chain models.
 License: CC0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports: 
     Matrix, terra, dplyr, mvtnorm, numDeriv, optimx, sf, spdep, 
     ctmm, methods, tidyr, rARPACK
@@ -22,3 +21,4 @@ NeedsCompilation: yes
 Depends: 
     R (>= 4.1.0)
 LazyData: true
+Config/roxygen2/version: 8.0.0

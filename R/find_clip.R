@@ -1,6 +1,6 @@
 #' @title Find Clip Value
 #' @param f Fraction of time unit in processed telemetry data
-#' @param prob Cummulative probability of residency time
+#' @param prob Cumulative probability of residency time
 #' @param upper The maximum value for the clip value
 #' @description
 #' This function allows the user to calculate the clipping value for the CTMC rate matrix Q,
