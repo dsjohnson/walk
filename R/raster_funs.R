@@ -27,7 +27,7 @@ bc_raster <- function(r,s){
 #' @param r SpatRaster object
 #' @param scale Logical, Should the gradient be scaled by resolution of the coordinates. Defaults 
 #' to `scale = TRUE`
-#' @importFrom terra terrain
+#' @importFrom terra terrain res
 #' @export
 get_grad <- function(r, scale=TRUE){
   h <- res(r)

@@ -1,4 +1,4 @@
-#define arma_64bit_word 1
+// #define arma_64bit_word 1
 // #define ARMA_USE_SUPERLU 1
 
 #include <RcppArmadillo.h>
