@@ -26,10 +26,11 @@ models <- c("underdamped","overdamped")
 betaList <- list(             # resource selection coefficients for the spatial covariates (cov_1, cov_2, ... cov_ncov, d2c)
         c(-4, 6, 5, -0.1),    # High Gradient - Fast Diffusion
         c(-1, 2, 0, -0.1))    # Low Gradient - Slow Diffusion
-ncov <- length(beta) - 1 # number of spatial covariates to be generated using simCov
+
 sigmaList <- list(      # diffusion (or speed) parameter
              2.5, # Fast Diffusion
              1)   # Slow Diffusion
+
 gamma <- 0.5 # friction parameter (smaller value -> more directional persistence); ignored unless model=="underdamped"
 psi <- 1 # error ellipse scaling parameter
 
@@ -85,6 +86,8 @@ for(ind in 1:length(sigmaList)){
   
   sigma <- sigmaList[[ind]]
   beta <- betaList[[ind]]
+  
+  ncov <- length(beta) - 1 - includeBarrier # number of spatial covariates to be generated using simCov
    
   for(model in models){
     
