@@ -1,3 +1,5 @@
+/*
+
 // [[Rcpp::depends(RcppArmadillo)]]
 
 #include <RcppArmadillo.h>
@@ -86,3 +88,7 @@ double ctmc_n2ll_arma_precomputed(
   
   return -2.0 * accu(log_lik_v);
 }
+ 
+ 
+ 
+ */

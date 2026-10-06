@@ -1,3 +1,15 @@
+/*
+
+// [[Rcpp::depends(RcppArmadillo)]]
+
+#include <RcppArmadillo.h>
+#include <expQ2.h>
+
+using namespace Rcpp;
+using namespace expQ2;
+using namespace arma;
+
+
 // Construct a local rate matrix Q_sub with an explicit absorbing sink at index n_sub
 arma::sp_mat build_Q_sub_absorbing(const arma::sp_mat& Q, const arma::uvec& sub_set) {
   uword n_sub = sub_set.n_elem;
@@ -45,3 +57,5 @@ arma::rowvec v_sub = phi_exp_lnG(phi_sub, Q_sub * dt(i), eq_prec);
 // 4. Map only the interior states back to full v (discard the sink value at v_sub(n_sub))
 v.zeros();
 v.cols(sub_set) = v_sub.head(sub_set.n_elem);
+ 
+ */
