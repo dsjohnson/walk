@@ -3,7 +3,7 @@
 
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[rcpp::plugins(cpp11)]] 
+
 #include <expQ2.h>
 
 
