@@ -3,12 +3,13 @@
 
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[rcpp::plugins(cpp11)]] 
-#include <expQ2.h>
+// [[Rcpp::interfaces(r, cpp)]]
+
+#include <expmAction.h>
 
 
 using namespace Rcpp;
-using namespace expQ2;
+using namespace expmAction;
 using namespace arma;
 
 
@@ -76,32 +77,23 @@ arma::sp_mat clip_Q(const arma::sp_mat& Q, const double& clip) {
   return out;
 }
 
-/*
+
 // Try and add new expmAction package
-arma::mat cpp_execute_uniformization_time(const arma::sp_mat& Q, 
-                                          const arma::rowvec& v, 
-                                          double alpha_0, 
-                                          double t, 
-                                          double tolerance);
 // [[Rcpp::export]]
-arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat& lnG, const double& prec = 1.0e-8) {
-  // 1. Extract the diagonal elements of the sparse rate matrix to compute alpha_0
-  arma::vec diag_elements = lnG.diag();
-  double alpha_0 = arma::max(arma::abs(diag_elements));
-  // 2. Safely extract the first row of 'phi' as a dense row vector
-  arma::rowvec v_row = phi.row(0);
-  // 3. Execute your lightning-fast bare-metal uniformization engine
-  // We pass t = 1.0 here because the time scale is natively built into lnG
-  arma::mat out = cpp_execute_uniformization_time(lnG, v_row, alpha_0, 1.0, prec);
+arma::mat phi_exp_lnG( const arma::rowvec& v, const arma::sp_mat& Q, double t, double prec){
+  arma::mat out = expmAction::cpp_v_exp_Q_t(v, Q, t, prec);
   return out;
 }
-*/
 
+
+
+/*
 // [[Rcpp::export]]
 arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8) {
   arma::mat out = expQ2::sv_exp_Q(phi, lnG, prec, false, true);
   return out;
 }
+*/
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 

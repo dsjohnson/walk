@@ -33,8 +33,8 @@ clip_Q <- function(Q, clip) {
     .Call(`_walk_clip_Q`, Q, clip)
 }
 
-phi_exp_lnG <- function(phi, lnG, prec = 1.0e-8) {
-    .Call(`_walk_phi_exp_lnG`, phi, lnG, prec)
+phi_exp_lnG <- function(v, Q, t, prec) {
+    .Call(`_walk_phi_exp_lnG`, v, Q, t, prec)
 }
 
 load_Q <- function(from_to, Xb_q_r, Xb_q_m, ns, link_r = 1L, a_r = 1.0, l_r = 0.0, u_r = 0.0, link_m = 1L, a_m = 1.0, norm = TRUE, clip = 0.0) {
@@ -45,3 +45,7 @@ load_Q_sde <- function(from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip = 0.0) {
     .Call(`_walk_load_Q_sde`, from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip)
 }
 
+# Register entry points for exported C++ functions
+methods::setLoadAction(function(ns) {
+    .Call(`_walk_RcppExport_registerCCallable`)
+})

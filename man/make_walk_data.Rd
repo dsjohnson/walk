@@ -9,6 +9,7 @@ make_walk_data(
   cell_data,
   grad = NULL,
   rast_mask = NULL,
+  get_subset_idx = TRUE,
   directions = "rook",
   debug = 0,
   ...
@@ -24,6 +25,8 @@ The entries are probabilities that the animal is located in the corresponding ce
 
 \item{rast_mask}{Raster mask for inaccessible cells when \code{cell_data} is of type \code{SpatRaster} from the \code{terra} package. This is ignored
 if \code{cell_data} is an \code{POLYGON} data frame from the \code{sf} package.}
+
+\item{get_subset_idx}{Logical. Should a rate matrix subsetting approximation be used to increase computational speed.}
 
 \item{directions}{Neighborhood structure, one of \code{"rook"} or \code{"queen"}.}
 

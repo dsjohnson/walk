@@ -1,14 +1,14 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 #include <RcppArmadillo.h>
-#include <expQ2.h>
+#include <expmAction.h>
 
 using namespace Rcpp;
-using namespace expQ2;
+using namespace expmAction;
 using namespace arma;
 
 // function prototypes
-arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8);
+arma::mat phi_exp_lnG(const arma::rowvec& v, const arma::sp_mat&  Q, double t, double prec);
 arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0, const int& link_m=1, const double& a_m=1.0, const bool& norm=true, const double& clip=0.0);
 arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& hij, const int& ns, const double& k, const double& clip=0.0);
 
@@ -56,7 +56,7 @@ double ctmc_n2ll_arma(
   phi = phi/u;
   // Start Forward alg loop (index = i)
   for(int i=1; i<N; i++){
-    v = phi_exp_lnG(phi, Q*dt(i), eq_prec);
+    v = phi_exp_lnG(phi, Q, dt(i), eq_prec);
     v = v % ((1-p)*L.row(i)) + (p/ns)*v;
     u = accu(v);
     log_lik_v(i) = log(u);
