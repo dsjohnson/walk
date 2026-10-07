@@ -145,15 +145,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // phi_exp_lnG
-arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat& lnG, const double& prec);
-RcppExport SEXP _walk_phi_exp_lnG(SEXP phiSEXP, SEXP lnGSEXP, SEXP precSEXP) {
+arma::mat phi_exp_lnG(const arma::rowvec& v, const arma::sp_mat& Q, double t, double prec);
+RcppExport SEXP _walk_phi_exp_lnG(SEXP vSEXP, SEXP QSEXP, SEXP tSEXP, SEXP precSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type phi(phiSEXP);
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type lnG(lnGSEXP);
-    Rcpp::traits::input_parameter< const double& >::type prec(precSEXP);
-    rcpp_result_gen = Rcpp::wrap(phi_exp_lnG(phi, lnG, prec));
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type v(vSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< double >::type t(tSEXP);
+    Rcpp::traits::input_parameter< double >::type prec(precSEXP);
+    rcpp_result_gen = Rcpp::wrap(phi_exp_lnG(v, Q, t, prec));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -206,7 +207,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_walk_soft_plus", (DL_FUNC) &_walk_soft_plus, 2},
     {"_walk_hard_plus", (DL_FUNC) &_walk_hard_plus, 1},
     {"_walk_clip_Q", (DL_FUNC) &_walk_clip_Q, 2},
-    {"_walk_phi_exp_lnG", (DL_FUNC) &_walk_phi_exp_lnG, 3},
+    {"_walk_phi_exp_lnG", (DL_FUNC) &_walk_phi_exp_lnG, 4},
     {"_walk_load_Q", (DL_FUNC) &_walk_load_Q, 12},
     {"_walk_load_Q_sde", (DL_FUNC) &_walk_load_Q_sde, 7},
     {NULL, NULL, 0}
