@@ -3,10 +3,10 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 #include <RcppArmadillo.h>
-#include <expQ2.h>
+#include <expmAction.h>
 
 using namespace Rcpp;
-using namespace expQ2;
+using namespace expmAction;
 using namespace arma;
 
 

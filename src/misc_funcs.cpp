@@ -1,9 +1,6 @@
-// #define arma_64bit_word 1
-// #define ARMA_USE_SUPERLU 1
 
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::interfaces(r, cpp)]]
 
 #include <expmAction.h>
 
@@ -21,7 +18,7 @@ arma::sp_mat sp_mat_div(const arma::sp_mat X, const arma::sp_mat Y){
   return R;
 }
 
-//[[Rcpp::export]]
+// [[Rcpp::export]]
 arma::vec stat_dist(const arma::sp_mat& Q) {
   arma::sp_mat Qt = Q.t();
   uword n = Qt.n_rows;
@@ -34,9 +31,7 @@ arma::vec stat_dist(const arma::sp_mat& Q) {
   return pi;
 }
 
-
-
-//[[Rcpp::export]]
+// [[Rcpp::export]]
 arma::vec logit(const arma::vec& x, const double& L=0.0, const double& U=0.0) {
   if(L < 0.0) stop("'L' must be >= 0 for logistic contraint.");
   if(U<=0.0 | U<=L) stop("'U' must be >0 and >L for logistic contraint.");
@@ -47,7 +42,7 @@ arma::vec logit(const arma::vec& x, const double& L=0.0, const double& U=0.0) {
   return(out);
 }
 
-//[[Rcpp::export]]
+// [[Rcpp::export]]
 arma::vec soft_plus(const arma::vec& x, const double& a = 1.0){
   if(a < 1.0) stop("'a' must be > 1 for soft-plus link function.");
   arma::vec out(x);
@@ -57,7 +52,7 @@ arma::vec soft_plus(const arma::vec& x, const double& a = 1.0){
   return out;
 } 
 
-//[[Rcpp::export]]
+// [[Rcpp::export]]
 arma::vec hard_plus(const arma::vec& x){
   arma::vec out(x);
   for(int i=0; i<x.size(); i++){
@@ -66,7 +61,7 @@ arma::vec hard_plus(const arma::vec& x){
   return out;
 } 
 
-//[[Rcpp::export]]
+// [[Rcpp::export]]
 arma::sp_mat clip_Q(const arma::sp_mat& Q, const double& clip) {
   int n = Q.n_rows;
   arma::sp_mat Cm(n, n);
@@ -88,7 +83,6 @@ arma::mat phi_exp_lnG( const arma::rowvec& v, const arma::sp_mat& Q, double t, d
 
 
 /*
-// [[Rcpp::export]]
 arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8) {
   arma::mat out = expQ2::sv_exp_Q(phi, lnG, prec, false, true);
   return out;
@@ -132,7 +126,6 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
   return Q;
 }
 
-// // [[Rcpp::export]]
 // arma::sp_mat load_Q_add(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
 //                         const int& ns, const int& link_r=1,  const double& a_r=1.0, 
 //                         const int& link_m=1, const double& a_m=1.0, const double& clip=0.0) {
@@ -159,7 +152,6 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
 //   if(clip>0.0) Q = clip_Q(Q, clip);
 //   return Q;
 // }
-
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& hij,

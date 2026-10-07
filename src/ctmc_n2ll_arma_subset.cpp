@@ -3,13 +3,12 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 #include <RcppArmadillo.h>
-#include <expQ2.h>
 
 using namespace Rcpp;
 using namespace expQ2;
 using namespace arma;
 
-// [[Rcpp::export]]
+// // [[Rcpp::export]]
 double ctmc_n2ll_arma_precomputed(
     const arma::sp_mat& L, 
     const arma::vec& dt, 

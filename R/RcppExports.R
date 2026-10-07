@@ -45,7 +45,3 @@ load_Q_sde <- function(from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip = 0.0) {
     .Call(`_walk_load_Q_sde`, from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip)
 }
 
-# Register entry points for exported C++ functions
-methods::setLoadAction(function(ns) {
-    .Call(`_walk_RcppExport_registerCCallable`)
-})

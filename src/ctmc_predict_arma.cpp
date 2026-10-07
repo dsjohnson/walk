@@ -13,6 +13,7 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
 arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& hij, const int& ns, const double& k, const double& clip=0.0);
 
 // Calculate likelihood ///////////////
+
 // [[Rcpp::export]]
 Rcpp::List ctmc_predict_arma(
     const arma::sp_mat& L, 
