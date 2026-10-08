@@ -1,0 +1,216 @@
+---
+title: "Movement Simulation Methods and Results"
+output: pdf_document
+header-includes:
+  - \usepackage{multirow}
+  - \usepackage{booktabs}
+  - \usepackage{array}
+---
+
+## Simulation Methods
+
+### 1. Generating Movement Trajectories
+We simulated continuous-time animal movement trajectories using Langevin diffusion models to evaluate the recovery of resource selection coefficients under varying sampling and discretization conditions. Simulations were performed under two movement paradigms: an underdamped model (which incorporates momentum via a friction parameter $\gamma = 0.5$) and an overdamped model (representing pure 2D Brownian motion without directional persistence). 
+
+For each scenario, we generated 100 independent tracks consisting of 100,000 true locations at a fine temporal resolution ($\Delta t = 0.01$). The baseline diffusion (or speed) parameter was set to $\sigma = 2.5$ for the "High-Gradient / Fast-Diffusion" scenario and $\sigma = 1$ for the "Low-Gradient / Slow-Diffusion" scenario.
+
+### 2. Spatial Environment & Barriers
+The true habitat landscape was generated on a fine spatial grid (`langRes = 1`) bounded by a spatial scale of 200 units. To construct a realistic, heterogeneous environment, three continuous spatial covariates were generated with random spatial ranges to represent autocorrelated resource fields. A quadratic distance-to-center penalty (`d2c`) was included to prevent tracks from drifting infinitely away from the origin. 
+
+To evaluate the effects of absolute movement boundaries, a complex coastal barrier was simulated, containing a mainland boundary and randomly scattered islands. This generated a discrete land mask and a continuous distance-to-coastline covariate. True resource selection coefficients driving the movement were set to $\beta = (-4, 6, 5, -0.1, -0.1)$ for the High-Gradient / Fast-Diffusion scenario, and $\beta = (-1, 2, 0, -0.1, -0.1)$ for the Low-Gradient / Slow-Diffusion scenario (representing the three resource covariates, `d2c`, and `d2coast`, respectively).
+
+### 3. Observation Process and Measurement Error
+To mimic real-world telemetry arrays, the true continuous paths were subsampled to introduce significant missing data and spatial uncertainty. We applied missing data proportions of 0.99, 0.995, and 0.998, which translated to effective sampling intervals ($dt$) of 1, 2, and 5 time units. 
+
+Telemetry measurement error was applied as a bivariate normal distribution. The semi-major axis standard deviation ($\sigma_{err}$) was varied across scenarios (0.5, 2.5, 5, and 10), with the semi-minor axis defined as half the semi-major axis, and error ellipse orientations drawn from a uniform distribution (0--180 degrees).
+
+### 4. Model Fitting & Spatial Discretization Pipeline
+Subsampled tracks were fit using two models: the true continuous-time Langevin model, and a discretized Continuous-Time Markov Chain (CTMC) model utilizing the `walk` package. To investigate discretization artifacts, the CTMC model was fit at varying spatial resolutions (`walkRes` $\in \{1, 2, 5, 8\}$).
+
+Because aggregating rasters can inherently destroy fine-scale topologies (such as narrow land bridges or small islands), a rigorous projection pipeline was used to evaluate utilization distributions (UDs). The coarse `{walk}` model UD was zero-padded using `terra::extend` to prevent bounding-box truncation artifacts. The padded raster was then projected back to the fine `langRes = 1` grid via bilinear interpolation to reconstruct smooth continuous probability gradients. Finally, the exact high-resolution coastline mask was applied post-hoc to perfectly preserve physical barriers, and the resulting UD was renormalized to sum to 1.
+
+### 5. Evaluation Metrics
+Model performance was quantified by comparing the Estimated UD to the True UD across the valid fine-scale grid. We evaluated three metrics: Bhattacharyya’s Affinity (BA), which measures the colocation and pattern similarity between the true and estimated probability distributions (0 = no similarity, 1 = complete similarity); Schoener's D, which measures the absolute probability intersection (0 = no intersection, 1 = complete intersection); and the Root Mean Square Error of the log-transformed UDs (log RMSE), which captures deviations in magnitude and intensity ($<0.5$ = tight fit, $0.5 - 1.5$ = good fit, $>2$ = poor fit).
+
+\newpage
+
+## Results
+
+```{r table-generation, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+library(tidyverse)
+library(kableExtra)
+library(stringr)
+
+#' -----------------------------------------------------------------------------
+#' Simulation parameters
+#' -----------------------------------------------------------------------------
+nsims <- 100
+nbAnimals <- 1 
+obsPerAnimal <- 100000 
+timeStep <- 0.01 
+
+models <- c("underdamped","overdamped")
+
+scenarios <- list(
+  list(name = "High-Gradient / Fast-Diffusion", sigma = 2.5, beta = c(-4, 6, 5, -0.1)),
+  list(name = "Low-Gradient / Slow-Diffusion", sigma = 1, beta = c(-1, 2, 0, -0.1))
+)
+
+ncov <- length(scenarios[[1]]$beta) - 1
+gamma <- 0.5 
+psi <- 1 
+includeBarrier <- TRUE
+
+samplingRate <- 1 
+propMissingVec <- c(0.99,0.995,0.998)
+
+smaj.sdVec <- c(0.5,2.5,5,10) 
+eor.lim <- c(0,180) 
+
+sca <- 200 
+obsBuff <- 10 
+covRange <- c(0.1,0.5) 
+
+langRes <- 1 
+walkResVec <- c(1,2,5,8) 
+
+#' -----------------------------------------------------------------------------
+#' 1. Extract Data from Simulation Files
+#' -----------------------------------------------------------------------------
+results_list <- list()
+
+for (scenario in scenarios) {
+  sigma <- scenario$sigma
+  beta <- scenario$beta
+  if(includeBarrier) beta <- c(beta, -0.1)
+  
+  for (model in models) {
+    for (propMissing in propMissingVec) {
+      dt_val <- round(timeStep / (1 - propMissing), 1)
+      
+      for (smaj.sd in smaj.sdVec) {
+        if (smaj.sd == 2.5) {
+          cur_walkResVec <- walkResVec
+        } else {
+          cur_walkResVec <- 2
+        }
+        
+        for (walkRes in cur_walkResVec) {
+          cur_params <- list(
+            model = model,
+            nsims = nsims,
+            nbAnimals = nbAnimals,
+            obsPerAnimal = obsPerAnimal,
+            timeStep = timeStep,
+            sigma = sigma,
+            gamma = gamma,
+            psi = psi,
+            includeBarrier = includeBarrier,
+            samplingRate = samplingRate,
+            propMissing = propMissing,
+            smaj.sd = smaj.sd,
+            sca = sca,
+            langRes = langRes,
+            walkRes = walkRes
+          )
+          
+          param_tags <- paste(names(cur_params), cur_params, sep = "=", collapse = "_")
+          fileName <- here::here(paste0("inst/simulations/results/sim_results_", param_tags, ".RData"))
+          
+          walk_ba <- NA
+          lang_ba <- NA
+          walk_sd <- NA
+          lang_sd <- NA
+          walk_rmse <- NA
+          lang_rmse <- NA
+          
+          if (file.exists(fileName)) {
+            e <- new.env() 
+            load(fileName, envir = e)
+            
+            if ("parMat" %in% ls(e) && "parMatLang" %in% ls(e)) {
+              walk_ba <- mean(e$parMat[, "BA"], na.rm = TRUE)
+              lang_ba <- mean(e$parMatLang[, "BA"], na.rm = TRUE)
+              walk_sd <- mean(e$parMat[, "SchoenerD"], na.rm = TRUE)
+              lang_sd <- mean(e$parMatLang[, "SchoenerD"], na.rm = TRUE)
+              walk_rmse <- mean(e$parMat[, "RMSE_log"], na.rm = TRUE)
+              lang_rmse <- mean(e$parMatLang[, "RMSE_log"], na.rm = TRUE)
+            }
+          } else {
+            warning("File not found: ", fileName)
+          }
+          
+          results_list[[length(results_list) + 1]] <- data.frame(
+            Scenario = scenario$name,
+            Model = model,
+            smaj_sd = smaj.sd,
+            walkRes = walkRes,
+            dt = dt_val,
+            walk_BA = walk_ba,
+            lang_BA = lang_ba,
+            walk_SchoenerD = walk_sd,
+            lang_SchoenerD = lang_sd,
+            walk_RMSE = walk_rmse,
+            lang_RMSE = lang_rmse
+          )
+        }
+      }
+    }
+  }
+}
+
+df_results <- bind_rows(results_list)
+
+#' -----------------------------------------------------------------------------
+#' Reshape and Create Formatting Helper
+#' -----------------------------------------------------------------------------
+df_wide <- df_results %>%
+  pivot_wider(
+    names_from = dt,
+    values_from = c(walk_BA, lang_BA, walk_SchoenerD, lang_SchoenerD, walk_RMSE, lang_RMSE),
+    names_glue = "{.value}_{dt}"
+  ) %>%
+  arrange(desc(Scenario), desc(Model), smaj_sd, walkRes)
+
+format_ba_table <- function(df) {
+  df %>%
+    mutate(Model = stringr::str_to_title(Model)) %>% 
+    mutate(across(starts_with("walk_") | starts_with("lang_"), ~sprintf("%.3f", .x))) %>%
+    mutate(across(everything(), ~str_replace_na(as.character(.x), "---")))
+}
+
+make_metric_table <- function(df, metric_prefix, df_col_name, display_col_name, caption_text, tbl_label) {
+  df %>%
+    select(Scenario, Model, all_of(df_col_name), 
+           paste0("walk_", metric_prefix, "_1"), paste0("lang_", metric_prefix, "_1"),
+           paste0("walk_", metric_prefix, "_2"), paste0("lang_", metric_prefix, "_2"),
+           paste0("walk_", metric_prefix, "_5"), paste0("lang_", metric_prefix, "_5")) %>%
+    kbl(
+      format = "latex", booktabs = TRUE, escape = FALSE,
+      align = c("l", "l", "c", "c", "c", "c", "c", "c", "c"),
+      col.names = c("Scenario", "Model", display_col_name, "walk", "lang", "walk", "lang", "walk", "lang"),
+      caption = caption_text,
+      label = tbl_label
+    ) %>%
+    add_header_above(c(" " = 3, "dt = 1" = 2, "dt = 2" = 2, "dt = 5" = 2)) %>%
+    collapse_rows(columns = 1:2, valign = "top", latex_hline = "major") %>%
+    kable_styling(latex_options = c("HOLD_position"), position = "center")
+}
+
+#' -----------------------------------------------------------------------------
+#' Generate Tables
+#' -----------------------------------------------------------------------------
+df_walkres <- df_wide %>% filter(smaj_sd == 2.5) %>% select(-smaj_sd)
+df_walkres_fmt <- format_ba_table(df_walkres)
+
+cat(make_metric_table(df_walkres_fmt, "BA", "walkRes", "walkRes", "Effect of walkRes on Bhattacharyya's Affinity (BA) ($\\sigma_{err} = 2.5$)", "walkres-ba"), "\n\n")
+cat(make_metric_table(df_walkres_fmt, "SchoenerD", "walkRes", "walkRes", "Effect of walkRes on Schoener's D ($\\sigma_{err} = 2.5$)", "walkres-sd"), "\n\n")
+cat(make_metric_table(df_walkres_fmt, "RMSE", "walkRes", "walkRes", "Effect of walkRes on log(RMSE) ($\\sigma_{err} = 2.5$)", "walkres-rmse"), "\n\n")
+
+df_smajsd <- df_wide %>% filter(walkRes == 2) %>% select(-walkRes)
+df_smajsd_fmt <- format_ba_table(df_smajsd)
+
+cat(make_metric_table(df_smajsd_fmt, "BA", "smaj_sd", "$\\sigma_{err}$", "Effect of Measurement Error on Bhattacharyya's Affinity (BA) (walkRes = 2)", "smajsd-ba"), "\n\n")
+cat(make_metric_table(df_smajsd_fmt, "SchoenerD", "smaj_sd", "$\\sigma_{err}$", "Effect of Measurement Error on Schoener's D (walkRes = 2)", "smajsd-sd"), "\n\n")
+cat(make_metric_table(df_smajsd_fmt, "RMSE", "smaj_sd", "$\\sigma_{err}$", "Effect of Measurement Error on log(RMSE) (walkRes = 2)", "smajsd-rmse"), "\n")
+```
