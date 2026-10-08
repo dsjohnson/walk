@@ -5,8 +5,8 @@ ctmc_n2ll_arma <- function(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq
     .Call(`_walk_ctmc_n2ll_arma`, L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip)
 }
 
-ctmc_predict_arma <- function(L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip) {
-    .Call(`_walk_ctmc_predict_arma`, L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip)
+ctmc_predict_arma <- function(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip) {
+    .Call(`_walk_ctmc_predict_arma`, L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip)
 }
 
 sp_mat_div <- function(X, Y) {

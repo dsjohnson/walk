@@ -63,8 +63,7 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, trunc_tol=1.0e-8, d
   if(debug==2) browser()
   #(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec = 1.0e-8, trunc_tol = 1.0e-8, link = 1L, row_sweep = TRUE)
   out <- ctmc_predict_arma(
-    L=Lpred, 
-    obs=1.0*(rowSums(Lpred)>0), 
+    L=t(Lpred), 
     dt=times$dt, 
     ns=data_list$ns, 
     from_to=from_to, 
@@ -86,6 +85,6 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, trunc_tol=1.0e-8, d
   
   if(debug==3) browser()
   
-  return(list(local_state_prob=out$local_state_prob, times=times))
+  return(list(local_state_prob=out, times=times))
   
 }

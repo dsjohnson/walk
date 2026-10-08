@@ -32,7 +32,7 @@ arma::vec stat_dist(const arma::sp_mat& Q) {
 // [[Rcpp::export]]
 arma::vec logit(const arma::vec& x, double L, double U) {
   if(L < 0.0) stop("'L' must be >= 0 for logistic contraint.");
-  if(U<=0.0 | U<=L) stop("'U' must be >0 and >L for logistic contraint.");
+  if((U<=0.0) | (U<=L)) stop("'U' must be >0 and >L for logistic contraint.");
   arma::vec out(x);
   for(int i=0; i<x.size(); i++){
     out(i) = L + (U-L)/(1+trunc_exp(-x(i)));
@@ -117,7 +117,7 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
     Q.diag() -= 1*qii;
   }
   
-  if(clip>0 & link_r!=3) Q = clip_Q(Q, clip);
+  if((clip>0) & (link_r!=3)) Q = clip_Q(Q, clip);
   return Q;
 }
 
