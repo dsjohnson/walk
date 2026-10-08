@@ -43,13 +43,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // ctmc_predict_arma
-Rcpp::List ctmc_predict_arma(const arma::sp_mat& L, const arma::vec& obs, const arma::vec& dt, int ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, double p, const arma::rowvec& delta, const arma::vec& hij, double eq_prec, double trunc_tol, int link_r, double a_r, double l_r, double u_r, int link_m, double a_m, int form, double k, bool norm, double clip);
-RcppExport SEXP _walk_ctmc_predict_arma(SEXP LSEXP, SEXP obsSEXP, SEXP dtSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP pSEXP, SEXP deltaSEXP, SEXP hijSEXP, SEXP eq_precSEXP, SEXP trunc_tolSEXP, SEXP link_rSEXP, SEXP a_rSEXP, SEXP l_rSEXP, SEXP u_rSEXP, SEXP link_mSEXP, SEXP a_mSEXP, SEXP formSEXP, SEXP kSEXP, SEXP normSEXP, SEXP clipSEXP) {
+arma::mat ctmc_predict_arma(const arma::sp_mat& L, const arma::vec& dt, int ns, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, double p, const arma::rowvec& delta, const arma::vec& hij, double eq_prec, double trunc_tol, int link_r, double a_r, double l_r, double u_r, int link_m, double a_m, int form, double k, bool norm, double clip);
+RcppExport SEXP _walk_ctmc_predict_arma(SEXP LSEXP, SEXP dtSEXP, SEXP nsSEXP, SEXP from_toSEXP, SEXP Xb_q_rSEXP, SEXP Xb_q_mSEXP, SEXP pSEXP, SEXP deltaSEXP, SEXP hijSEXP, SEXP eq_precSEXP, SEXP trunc_tolSEXP, SEXP link_rSEXP, SEXP a_rSEXP, SEXP l_rSEXP, SEXP u_rSEXP, SEXP link_mSEXP, SEXP a_mSEXP, SEXP formSEXP, SEXP kSEXP, SEXP normSEXP, SEXP clipSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type L(LSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type obs(obsSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type dt(dtSEXP);
     Rcpp::traits::input_parameter< int >::type ns(nsSEXP);
     Rcpp::traits::input_parameter< const arma::umat& >::type from_to(from_toSEXP);
@@ -70,7 +69,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type k(kSEXP);
     Rcpp::traits::input_parameter< bool >::type norm(normSEXP);
     Rcpp::traits::input_parameter< double >::type clip(clipSEXP);
-    rcpp_result_gen = Rcpp::wrap(ctmc_predict_arma(L, obs, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip));
+    rcpp_result_gen = Rcpp::wrap(ctmc_predict_arma(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -187,7 +186,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_walk_ctmc_n2ll_arma", (DL_FUNC) &_walk_ctmc_n2ll_arma, 20},
-    {"_walk_ctmc_predict_arma", (DL_FUNC) &_walk_ctmc_predict_arma, 22},
+    {"_walk_ctmc_predict_arma", (DL_FUNC) &_walk_ctmc_predict_arma, 21},
     {"_walk_sp_mat_div", (DL_FUNC) &_walk_sp_mat_div, 2},
     {"_walk_stat_dist", (DL_FUNC) &_walk_stat_dist, 1},
     {"_walk_logit", (DL_FUNC) &_walk_logit, 3},
