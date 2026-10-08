@@ -5,18 +5,17 @@
 \title{Create neighborhood indices for subsetting cells between movement locations to improve
 computational speed at the cost of some likelihood approximation.}
 \usage{
-make_subset_neigh(walk_data, vmax = NULL, subset_buffer = 0)
+make_subset_neigh(walk_data, vmax, min_buffer = NULL)
 }
 \arguments{
 \item{walk_data}{A \code{walk_ddl} object created by \code{walk::make_walk_data}}
 
 \item{vmax}{A single numerical value describing a rough estimate of the maximum velocity of the animal. This will be used for
-for calculating the buffer around movement subsets for each time step, \verb{buffer[i] = vmax * dt[i}, for \verb{i = 1...,N}.}
+for calculating the buffer around movement subsets for each time step, \code{buffer[i] = vmax * sqrt(dt[i])}, for \verb{i = 1...,N}.
+The \code{vmax} argument is assumed to be in units of prjected coordinate units per time units in the original telemetry data, e.g., m/h usually.}
 
-\item{subset_buffer}{A value > 0 such that the bounding box of cells created
-by union of the location uncertainty layers (\code{walk_data$L}) are buffered by \code{subset_buffer*walk_data$times$dt[i]} to reduce the likelihood
-approximation. Once \code{subset_buffer} is large enough such that all cells are involved
-at each time step, there is no longer any approximation.}
+\item{min_buffer}{A value >= 0 such that the buffer is guaranteed to be at least \code{min_buffer} to prevent numerical issues
+for small time steps and high precision locations. If not specified, calculates an approximate 2 cell minimum buffer.}
 }
 \description{
 Create neighborhood indices for subsetting cells between movement locations to improve
