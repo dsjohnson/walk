@@ -123,7 +123,7 @@ fit_ctmc <- function(walk_data,
     N = nrow(walk_data$L),
     ns = nrow(walk_data$q_r),
     dt = walk_data$times$dt,
-    L = t(walk_data$L),
+    L = walk_data$L,
     delta = delta,
     hij=walk_data$q_m$h,
     ### Q

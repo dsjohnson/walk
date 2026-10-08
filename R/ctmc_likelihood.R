@@ -35,7 +35,7 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
   if(debug==2) browser()
   
   ctmc_n2ll_arma(
-    L = data_list$L, 
+    L = t(data_list$L), #arma code needs the obs on the columns
     dt = data_list$dt, 
     ns = data_list$ns, 
     from_to = from_to, 
