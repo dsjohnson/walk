@@ -1,91 +1,102 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
-#include <RcppArmadillo.h>
-#include <expmAction.h>
+#include "walk_types.h"
 
 using namespace Rcpp;
-using namespace expmAction;
 using namespace arma;
 
-// function prototypes
-arma::mat phi_exp_lnG(const arma::rowvec& v, const arma::sp_mat&  Q, double t, double prec);
-arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0, const int& link_m=1, const double& a_m=1.0, const bool& norm=true, const double& clip=0.0);
-arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& hij, const int& ns, const double& k, const double& clip=0.0);
-
-// Calculate likelihood ///////////////
-
 // [[Rcpp::export]]
-Rcpp::List ctmc_predict_arma(
+arma::mat ctmc_predict_arma(
     const arma::sp_mat& L, 
-    const arma::vec& obs, 
     const arma::vec& dt, 
-    const int& ns, 
+    int ns, 
     const arma::umat& from_to, 
     const arma::vec& Xb_q_r, const arma::vec& Xb_q_m,
-    const double& p,
+    double p,
     const arma::rowvec& delta, 
     const arma::vec& hij,
-    const double& eq_prec = 1.0e-8,
-    const double& trunc_tol = 1.0e-8,
-    const int& link_r = 1,
-    const double& a_r = 1.0, 
-    const double& l_r = 0.0,
-    const double& u_r = 0.0,
-    const int& link_m = 1,
-    const double& a_m = 1.0, 
-    const int& form = 1,
-    const double& k = 2.0,
-    const bool& norm=true,
-    const double& clip=0.0)
+    double eq_prec,
+    double trunc_tol,
+    int link_r,
+    double a_r, 
+    double l_r,
+    double u_r,
+    int link_m,
+    double a_m, 
+    int form,
+    double k,
+    bool norm,
+    double clip)
 {
   int N = dt.size();
   arma::sp_mat Q;
-  if(form==1){
+  if(form == 1){
     Q = load_Q(from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, l_r, u_r, link_m, a_m, norm, clip);
-    // } else if(form==2){
-    //   Q = load_Q_add(from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, link_m, a_m, clip);
   } else {
     Q = load_Q_sde(from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip);
   }
   
+  arma::mat A(N, ns, fill::zeros);
+  arma::mat G(N, ns, fill::zeros);
+  arma::vec scale_factors(N, fill::zeros);
   
-  // Forward probs
-  arma::mat A(N, ns);
-  A.row(0) = delta;
-  // Backward probs
-  arma::mat B(ns, N);
-  B.col(N-1).ones();
+  // Forward Pass (Alpha) ----------------------------------------------------
+  arma::sp_mat Li = L.col(0).t();
+  arma::rowvec v = delta;
+  if(accu(Li) > 0) {
+    v = v % ((1.0 - p) * Li) + (p / ns) * v;
+  }
   
-  // State posterior matrix
-  arma::sp_mat G(N, ns);
+  double u = accu(v);
+  scale_factors(0) = u;
+  A.row(0) = v / u;
   
-  arma::rowvec v(ns);
-  arma::rowvec ab(ns);
+  for(int i = 1; i < N; i++) {
+    Li = L.col(i).t();
+    // Propagate forward through continuous time transition matrix
+    v = v_exp_Q_t(A.row(i - 1), Q, dt(i), eq_prec);
+    
+    // Apply emission / observation model
+    if(accu(Li) > 0) {
+      v = v % ((1.0 - p) * Li) + (p / ns) * v;
+    }
+    
+    u = accu(v);
+    scale_factors(i) = u;
+    A.row(i) = v / u;
+  }
   
-  // Start Forward alg loop (index = i)
-  for(int i=1; i<N; i++){
-    v = phi_exp_lnG(A.row(i-1), Q, dt(i), eq_prec);
-    if(obs(i)==1) v = v % ((1-p)*L.row(i)) + (p/ns)*v;
-    A.row(i) = v/accu(v);
-  } // end i
+  // Backward Pass (Beta) ---------------------------------------------------
+  // Initialize backward vector at terminal time N-1
+  arma::rowvec beta_curr(ns, fill::ones);
+  arma::rowvec  b_emission(ns, fill::zeros);
   
-  G.row(N-1) = A.row(N-1);
+  // Compute smoothed probability for the last state
+  arma::rowvec ab = A.row(N - 1) % beta_curr;
+  G.row(N - 1) = ab / accu(ab);
   
-  // Start backward loop (index i)
-  for(int i=N-1; i>0; i--){
-    //v = phi_exp_lnG(B.col(i).t(), (Q*dt(i)).t(), eq_prec);
-    if(obs(i)==1) v = v % ((1-p)*L.row(i)) + (p/ns)*v;
-    B.col(i-1) = (v/accu(v)).t();
-    ab =  A.row(i-1) % B.col(i-1).t();
-    ab = ab/accu(ab);
-    G.row(i-1) = ab.clean(trunc_tol);
-  } // end i
-  // G = normalise(G, 1, 1);
+  for(int i = N - 1; i > 0; i--) {
+    Li = L.col(i).t();
+    
+    // 1. Incorporate emission probability at step i
+    b_emission = beta_curr;
+    if(accu(Li) > 0) {
+      b_emission = b_emission % ((1.0 - p) * Li) + (p / ns) * b_emission;
+    }
+    
+    // 2. Backpropagate vector across continuous interval dt(i)
+    // Note: v_exp_Q_t(b, Q, dt) computes b * exp(Q * dt).
+    // Transposition relation: exp(Q * dt) * b^T = (b * exp(Q^T * dt))^T
+    beta_curr = v_exp_Q_t(b_emission, Q.t(), dt(i), eq_prec) / scale_factors(i);
+    
+    // 3. Compute smoothed state probabilities Gamma = Forward % Backward
+    ab = A.row(i - 1) % beta_curr;
+    ab = ab / accu(ab);
+    
+    // Apply threshold truncation clean-up
+    ab.elem(find(ab < trunc_tol)).zeros();
+    G.row(i - 1) = ab / accu(ab);
+  }
   
-  return Rcpp::List::create(
-    Rcpp::Named("local_state_prob") = G,
-    Rcpp::Named("alpha") = A,
-    Rcpp::Named("beta") = B
-  );
-  
+  return G;
 }

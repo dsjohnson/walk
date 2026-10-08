@@ -1,17 +1,15 @@
 
-#include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
-#include <expmAction.h>
+#include "walk_types.h"
 
 
 using namespace Rcpp;
-using namespace expmAction;
 using namespace arma;
 
 
 // [[Rcpp::export]]
-arma::sp_mat sp_mat_div(const arma::sp_mat X, const arma::sp_mat Y){
+arma::sp_mat sp_mat_div(const arma::sp_mat& X, const arma::sp_mat& Y){
   arma::sp_mat Yinv(Y);
   Yinv.transform([](double val) {return (1.0/val);});
   arma::sp_mat R = X % Yinv;
@@ -32,9 +30,9 @@ arma::vec stat_dist(const arma::sp_mat& Q) {
 }
 
 // [[Rcpp::export]]
-arma::vec logit(const arma::vec& x, const double& L=0.0, const double& U=0.0) {
+arma::vec logit(const arma::vec& x, double L, double U) {
   if(L < 0.0) stop("'L' must be >= 0 for logistic contraint.");
-  if(U<=0.0 | U<=L) stop("'U' must be >0 and >L for logistic contraint.");
+  if((U<=0.0) | (U<=L)) stop("'U' must be >0 and >L for logistic contraint.");
   arma::vec out(x);
   for(int i=0; i<x.size(); i++){
     out(i) = L + (U-L)/(1+trunc_exp(-x(i)));
@@ -43,7 +41,7 @@ arma::vec logit(const arma::vec& x, const double& L=0.0, const double& U=0.0) {
 }
 
 // [[Rcpp::export]]
-arma::vec soft_plus(const arma::vec& x, const double& a = 1.0){
+arma::vec soft_plus(const arma::vec& x, double a){
   if(a < 1.0) stop("'a' must be > 1 for soft-plus link function.");
   arma::vec out(x);
   for(int i=0; i<x.size(); i++){
@@ -62,7 +60,7 @@ arma::vec hard_plus(const arma::vec& x){
 } 
 
 // [[Rcpp::export]]
-arma::sp_mat clip_Q(const arma::sp_mat& Q, const double& clip) {
+arma::sp_mat clip_Q(const arma::sp_mat& Q, double clip) {
   int n = Q.n_rows;
   arma::sp_mat Cm(n, n);
   arma::vec qvals = -1*arma::vec(Q.diag());
@@ -74,13 +72,10 @@ arma::sp_mat clip_Q(const arma::sp_mat& Q, const double& clip) {
 
 
 // Try and add new expmAction package
-// [[Rcpp::export]]
-arma::mat phi_exp_lnG( const arma::rowvec& v, const arma::sp_mat& Q, double t, double prec){
-  arma::mat out = expmAction::cpp_v_exp_Q_t(v, Q, t, prec);
-  return out;
-}
-
-
+// arma::mat phi_exp_lnG( const arma::rowvec& v, const arma::sp_mat& Q, double t, double prec){
+//   arma::mat out = expmAction::cpp_v_exp_Q_t(v, Q, t, prec);
+//   return out;
+// }
 
 /*
 arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8) {
@@ -91,9 +86,9 @@ arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const doub
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
-                    const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0,
-                    const int& link_m=1, const double& a_m=1.0, 
-                    const bool& norm=true, const double& clip=0.0) {
+                    int ns, int link_r, double a_r, double l_r, double u_r,
+                    int link_m, double a_m, 
+                    bool norm, double clip) {
   arma::sp_mat Qr(ns,ns);
   arma::sp_mat Q(ns, ns);
   arma::vec Qm_vals;
@@ -122,7 +117,7 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
     Q.diag() -= 1*qii;
   }
   
-  if(clip>0 & link_r!=3) Q = clip_Q(Q, clip);
+  if((clip>0) & (link_r!=3)) Q = clip_Q(Q, clip);
   return Q;
 }
 
@@ -155,7 +150,7 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& hij,
-                        const int& ns, const double& k, const double& clip=0.0) {
+                        int ns, double k, double clip) {
   
   // make D
   arma::vec aij(from_to.n_cols, fill::ones);

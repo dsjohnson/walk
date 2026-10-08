@@ -1,12 +1,10 @@
 /*
 
 // [[Rcpp::depends(RcppArmadillo)]]
-
-#include <RcppArmadillo.h>
-#include <expmAction.h>
+ 
+#include "walk_types.h"
 
 using namespace Rcpp;
-using namespace expmAction;
 using namespace arma;
 
 
