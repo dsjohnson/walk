@@ -1,16 +1,21 @@
 /*
 
 // [[Rcpp::depends(RcppArmadillo)]]
-
-#include <RcppArmadillo.h>
-#include <expQ2.h>
+ 
+#include "walk_types.h"
 
 using namespace Rcpp;
-using namespace expQ2;
 using namespace arma;
 
+// function prototypes
+arma::mat phi_exp_lnG(const arma::rowvec& v, const arma::sp_mat&  Q, double t, double prec);
+arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const int& ns, const int& link_r=1, const double& a_r=1.0, const double& l_r=0.0, const double& u_r=0.0, const int& link_m=1, const double& a_m=1.0, const bool& norm=true, const double& clip=0.0);
+arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& hij, const int& ns, const double& k, const double& clip=0.0);
+
+// Calculate likelihood ///////////////
+
 // [[Rcpp::export]]
-double ctmc_n2ll_arma_precomputed(
+double ctmc_n2ll_arma_subset(
     const arma::sp_mat& L, 
     const arma::vec& dt, 
     const int& ns,
@@ -89,6 +94,5 @@ double ctmc_n2ll_arma_precomputed(
   return -2.0 * accu(log_lik_v);
 }
  
- 
- 
  */
+ 
