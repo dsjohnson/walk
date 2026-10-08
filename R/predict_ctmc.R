@@ -63,7 +63,7 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, trunc_tol=1.0e-8, d
   if(debug==2) browser()
   #(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, eq_prec = 1.0e-8, trunc_tol = 1.0e-8, link = 1L, row_sweep = TRUE)
   out <- ctmc_predict_arma(
-    L=t(Lpred), 
+    L=t(Lpred), # arma code needs the observations as columns
     dt=times$dt, 
     ns=data_list$ns, 
     from_to=from_to, 
