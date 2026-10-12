@@ -23,7 +23,7 @@ install.packages('walk', type='source', repos='https://dsjohnson.r-universe.dev'
 *You will need a C++ compiler for R*
 
 ``` r
-remotes::install_github('dsjohnson/walk')
+remotes::install_github('dsjohnson/walk/walk')
 ```
 
 # Disclaimer
