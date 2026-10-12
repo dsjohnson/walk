@@ -2,6 +2,7 @@
 
 export(argos_diag_to_cov)
 export(bc_raster)
+export(check_irreducibility)
 export(ctmc_control)
 export(ctmc_model)
 export(ctmc_n2ll)
@@ -37,6 +38,11 @@ importFrom(Matrix,
   t
 )
 importFrom(ctmm,uere)
+importFrom(igraph,
+  components,
+  graph_from_adjacency_matrix,
+  graph_from_data_frame
+)
 importFrom(methods,as)
 importFrom(mvtnorm,pmvnorm)
 importFrom(rARPACK,eigs)
