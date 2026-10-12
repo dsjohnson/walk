@@ -11,6 +11,7 @@
 #' @param ... Ignored arguments.
 #' @import dplyr 
 #' @importFrom Matrix rowSums
+#' @importFrom igraph graph_from_data_frame
 #' @export
 make_walk_data <- function(proc_data, cell_data, grad=NULL, rast_mask=NULL, 
                            get_subset_idx=TRUE, directions="rook", debug=0,...){
@@ -40,6 +41,14 @@ make_walk_data <- function(proc_data, cell_data, grad=NULL, rast_mask=NULL,
   out$q_r <- q_list$q_r
   out$q_m <- q_list$q_m
   class(out) <- c(class(out), "walk_ddl")
+  # Check for irreducubility
+  g <- graph_from_data_frame(d = out$q_m[,c("from_cellx","cellx")], directed = TRUE)
+  scc <- components(g, mode = "strong")
+  if(scc$no>1){
+    warning("There appears to be ", scc$no, " disconnected groups of cells in the masked habitat.",
+            " This can cause fit failure becuase the implied CTMC is not irreducible. ",
+            "In addition, the limiting distribution does not exist.")
+  }
   if(debug==3) browser()
   return(out)
 }

@@ -1,3 +1,15 @@
+#' @title Check for irreducibility of a CTMC rate matrix
+#' @param Q A sparse adjacency matrix
+#' @importFrom igraph graph_from_adjacency_matrix components
+#' @export
+check_irreducibility <- function(Q){
+  g <- graph_from_adjacency_matrix(Q, mode = "directed", weighted = TRUE, diag = FALSE)
+  scc <- components(g, mode = "strong")
+  groups <- data.frame(cellx=1:nrow(Q), group=scc$membership)
+  return(list(groups=groups, irreducible=(scc$no==1)))
+}
+
+
 #' @title Get movement transition matrix from fitted moveMMP object
 #' @param fit A fitted model object from \code{\link[walk]{fit_ctmc}}.
 #' @param clip Logical. If truncation was used for the rate matrix during model fitting, should it be used here?
@@ -50,7 +62,12 @@ get_Q <- function(fit, clip=TRUE, sparse=TRUE){
 get_lim_ud <- function(fit=NULL, hpd=NULL, clip=TRUE, method="lu",...){
   
   clip <- as.numeric(clip*fit$data_list$clip)
-  tQ <- t(get_Q(fit))
+  Q <- get_Q(fit)
+  if(!check_irreducibility(Q)$irreducible){
+    stop("The CTMC defined by the model appears to be reducible, there is no limiting distribution! ",
+         "Check that the masked habitat is not divided into seperate regions.")
+  }
+  tQ <- t(Q)
   
   if(method=="lu"){
     # browser()
