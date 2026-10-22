@@ -1,6 +1,5 @@
-
-#' @title Convert `simLangevin`  object to a `SpatRaster` stack from the `terra` package.
-#' @param data A `simLangevin` object from the `langevinSSM` package
+#' @title Convert `simLangevin`  or `dataLangevin' object to a `SpatRaster` stack from the `terra` package.
+#' @param data A `simLangevin` or `dataLangevin' object from the `langevinSSM` package
 #' @param cell_data A `\link[terra]{SpatRaster}` stack of covariates that will be used in CTMC 
 #' movement modeling. Cells with `NA` values will be considered areas to the animal cannot travel, i.e., 
 #' likelihood surfaces will be `0` for those cells.
@@ -21,21 +20,57 @@
 #' @importFrom terra vect buffer cells crds is.lonlat xyFromCell crs project
 #' @importFrom methods as
 #' @export
-proc_simLangevin<- function(data, cell_data, return_type="sparse", max_err=NULL, trunc=1.0e-8, return_inadmissible=FALSE){
+proc_Langevin<- function(data, cell_data, return_type="sparse", max_err=NULL, trunc=1.0e-8, return_inadmissible=FALSE){
   # Check arguments
-  if(!inherits(data, "simLangevin")) stop("'data' must be a langevinSSM::simLangevin object!")
+  if(!inherits(data, "simLangevin") & !inherits(data,"dataLangevin")) stop("'data' must be a 'simLangevin' or 'dataLangevin' object from the langevinSSM package!")
   if(!inherits(cell_data, "SpatRaster")) stop("'cell_data' must be a terra::SpatRaster object!")
   
-  # Evaluate error covariance
+  # Evaluate error ellipse covariance
   cov_df <- argos_diag_to_cov(data$smaj, data$smin, 180*data$eor/pi)
   
+  # x and y standard deviation errors (assumes no correlation, i.e., rho_o = 0)
+  sderrInd <- which(!is.na(data$x.err) & !is.na(data$y.err))
+  if(length(sderrInd)){
+    rho_o <- 0
+    v1 <- data$x.err[sderrInd]^2
+    v2 <- data$y.err[sderrInd]^2
+    c12 <- data$x.err[sderrInd] * data$y.err[sderrInd] * rho_o
+    cov_df$cov.x.x[sderrInd] <- v1
+    cov_df$cov.y.y[sderrInd] <- v2
+    cov_df$cov.x.y[sderrInd] <- c12
+    cov_df$cov.check[sderrInd] <-  (v1*v2-c12^2) > 0
+  }
+  
   # Extract error neighborhood and get cells 
-  telem_pts <- terra::vect(cbind(data$x, data$y)) 
-  if(is.null(max_err)) max_err <- 4*sqrt(pmax(cov_df$cov.x.x,cov_df$cov.y.y))
-  t_buf <- terra::buffer(telem_pts, max_err)
-  t_err <- terra::cells(cell_data, t_buf, touches=TRUE) 
-  t_err <- split(t_err[,'cell'], t_err[,'ID'])
-  xy <- terra::crds(telem_pts) 
+  telem_pts <- terra::vect(cbind(data$x, data$y))
+  xy <- terra::crds(telem_pts)
+  
+  if(is.null(max_err)) {
+    max_err <- 4 * sqrt(pmax(cov_df$cov.x.x, cov_df$cov.y.y))
+  } else if(length(max_err) == 1) {
+    max_err <- rep(max_err, length(telem_pts))
+  }
+  
+  telem_pts$orig_id <- 1:nrow(telem_pts)
+  valid_idx <- which(!is.na(max_err) & max_err > 0)
+  
+  t_err <- vector("list", nrow(xy))
+  
+  if(length(valid_idx) > 0) {
+    t_buf <- terra::buffer(telem_pts[valid_idx, ], max_err[valid_idx])
+    extr <- terra::cells(cell_data, t_buf, touches = TRUE)
+    extr[, 'ID'] <- t_buf$orig_id[extr[, 'ID']]
+    extr_list <- split(extr[, 'cell'], extr[, 'ID'])
+    t_err[as.numeric(names(extr_list))] <- extr_list
+  }
+  
+  invalid_idx <- setdiff(1:nrow(xy), valid_idx)
+  if(length(invalid_idx) > 0) {
+    exact_cells <- terra::cellFromXY(cell_data, xy[invalid_idx, , drop = FALSE])
+    for(k in seq_along(invalid_idx)) {
+      t_err[[ invalid_idx[k] ]] <- exact_cells[k]
+    }
+  }
   
   lik_list <- vector("list", nrow(xy))
   out <- NULL
@@ -46,14 +81,20 @@ proc_simLangevin<- function(data, cell_data, return_type="sparse", max_err=NULL,
   for(i in 1:nrow(xy)){
     # i <- 1
     if(any(!is.finite(t_err[[i]]))) stop("There are error buffered locations completely outside of raster area.")
-    sigma <- matrix(c(cov_df$cov.x.x[i], cov_df$cov.x.y[i], cov_df$cov.x.y[i], cov_df$cov.y.y[i]), 2, 2)
-    mean <- as.vector(xy[i,])
-    lower <- get_corner(t_err[[i]], cell_data, "ll")
-    upper <- get_corner(t_err[[i]], cell_data, "ur")
-    dfi <- cbind(obs=i, cell=t_err[[i]], lik=NA)
-    dfi[,'lik'] <- sapply(1:length(t_err[[i]]), 
-                          \(j) pmvnorm(lower=lower[j,], upper=upper[j,], mean=mean, sigma=sigma, keepAttr=FALSE)
-    )
+    
+    if(is.na(max_err[i]) || max_err[i] <= 0) {
+      dfi <- cbind(obs=i, cell=t_err[[i]], lik=1)
+    } else {
+      sigma <- matrix(c(cov_df$cov.x.x[i], cov_df$cov.x.y[i], cov_df$cov.x.y[i], cov_df$cov.y.y[i]), 2, 2)
+      mean <- as.vector(xy[i,])
+      lower <- get_corner(t_err[[i]], cell_data, "ll")
+      upper <- get_corner(t_err[[i]], cell_data, "ur")
+      dfi <- cbind(obs=i, cell=t_err[[i]], lik=NA)
+      dfi[,'lik'] <- sapply(1:length(t_err[[i]]), 
+                            \(j) pmvnorm(lower=lower[j,], upper=upper[j,], mean=mean, sigma=sigma, keepAttr=FALSE)
+      )
+    }
+    
     m <- ifelse(is.na(cell_data_val[t_err[[i]]]), 0, 1)
     dfi[,3] <- dfi[,3]*m
     if(sum(dfi[,3]) <=sqrt(.Machine$double.eps)){

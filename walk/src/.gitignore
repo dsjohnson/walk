@@ -1,0 +1,9 @@
+RcppExports.o
+build_Q_subset.o
+ctmc_n2ll_arma.o
+ctmc_n2ll_arma_subset.o
+ctmc_predict_arma.o
+misc_funcs.o
+test.o
+v_exp_Q_t.o
+walk.so
