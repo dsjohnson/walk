@@ -6,7 +6,7 @@
 #' with \code{cbind} to use with the \code{crwMLE} function.
 #' @param Major A vector containing the major axis information for each observation (na values are ok)
 #' @param Minor  A vector containing the minor axis information for each observation (na values are ok)
-#' @param Orientation A vector containing the angle orientation of the Major axis from North (na values are ok)
+#' @param Orientation A vector containing the angle orientation (in degrees) of the Major axis from North (na values are ok)
 #' @return A \code{data.frame} with the following columns
 #' \item{cov.x.x}{The variation of the location error in the x coordinate}
 #' \item{cov.y.y}{The variation of the location error in the x coordinate}
