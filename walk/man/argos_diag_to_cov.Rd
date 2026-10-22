@@ -11,7 +11,7 @@ argos_diag_to_cov(Major, Minor, Orientation)
 
 \item{Minor}{A vector containing the minor axis information for each observation (na values are ok)}
 
-\item{Orientation}{A vector containing the angle orientation of the Major axis from North (na values are ok)}
+\item{Orientation}{A vector containing the angle orientation (in degrees) of the Major axis from North (na values are ok)}
 }
 \value{
 A \code{data.frame} with the following columns
