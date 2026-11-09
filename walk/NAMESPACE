@@ -2,10 +2,13 @@
 
 export(argos_diag_to_cov)
 export(bc_raster)
+export(bind_proc_data)
 export(check_irreducibility)
 export(ctmc_control)
 export(ctmc_model)
 export(ctmc_n2ll)
+export(ctmc_n2ll_grad)
+export(ctmc_n2ll_joint)
 export(dm_q_m)
 export(dm_q_r)
 export(find_clip)
@@ -15,6 +18,7 @@ export(get_Q)
 export(get_betas)
 export(get_grad)
 export(get_lim_ud)
+export(grad_supported)
 export(make_subset_neigh)
 export(make_walk_data)
 export(predict_ctmc)
@@ -44,7 +48,6 @@ importFrom(igraph,
   graph_from_data_frame
 )
 importFrom(methods,as)
-importFrom(mvtnorm,pmvnorm)
 importFrom(rARPACK,eigs)
 importFrom(sf,
   st_drop_geometry,
@@ -85,7 +88,6 @@ importFrom(terra,
   values,
   vect,
   xFromCell,
-  xyFromCell,
   yFromCell
 )
 importFrom(tidyr,unnest)

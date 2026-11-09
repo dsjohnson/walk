@@ -7,3 +7,6 @@ misc_funcs.o
 test.o
 v_exp_Q_t.o
 walk.so
+ctmc_n2ll_joint.o
+bvn_cell_probs.o
+ctmc_grad_joint.o

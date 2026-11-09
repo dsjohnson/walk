@@ -2,7 +2,10 @@
 #' computational speed at the cost of some likelihood approximation. 
 #' @param walk_data A `walk_ddl` object created by `walk::make_walk_data`
 #' @param vmax A single numerical value describing a rough estimate of the maximum velocity of the animal. This will be used for 
-#' for calculating the buffer around movement subsets for each time step, `buffer[i] = vmax * sqrt(dt[i])`, for `i = 1...,N`.
+#' for calculating the buffer around movement subsets for each time step, `buffer[i] = vmax * sqrt(dt[i])`, for `i = 1...,N`,
+#' where `dt[i]` is the time from observation `i-1` to `i`. The first row of each segment
+#' (`walk_data$times$seg`, i.e. each individual or `max_gap` burst) is treated like the first
+#' observation (no transition from the previous segment).
 #' The `vmax` argument is assumed to be in units of prjected coordinate units per time units in the original telemetry data, e.g., m/h usually. 
 #' @param min_buffer A value >= 0 such that the buffer is guaranteed to be at least `min_buffer` to prevent numerical issues
 #' for small time steps and high precision locations. If not specified, calculates an approximate 2 cell minimum buffer.  
@@ -16,6 +19,11 @@ make_subset_neigh <- function(walk_data, vmax, min_buffer=NULL){
   xy_df <- walk_data$q_r |> select(cell, cellx, x, y)
   dt <- walk_data$times$dt
   N <- length(dt)
+  # independent segments (individuals / max_gap bursts): no transition into a segment's first row
+  seg <- walk_data$times$seg
+  if(is.null(seg)) seg <- rep(1L, N)
+  seg_first <- c(TRUE, seg[-1] != seg[-N])
+  dt[seg_first] <- 0
   L <- walk_data$L
   res <- c(
     dx = walk_data$q_m |> filter(w_x==1, w_y==0) |> pull(h) |> max(),
@@ -30,17 +38,18 @@ make_subset_neigh <- function(walk_data, vmax, min_buffer=NULL){
   }
   active_indices_list <- vector("list", N)
   
-  for(i in 2:N) {
+  for(i in seq_len(N)[-1]) {
+    if(seg_first[i]){ active_indices_list[[i]] <- 0; next }   # like step 1
     # 1. Identify non-zero likelihood cells for L(i-1) and L(i)
     cells_prev <- which(L[i-1, ] > 0)
     cells_curr <- which(L[i, ] > 0)
     # 2. Get min/max x, y bounds from both observations
     coords_prev <- filter(xy_df, cellx%in%cells_prev)
     coords_curr <- filter(xy_df, cellx%in%cells_curr)
-    x_min <- min(coords_prev$x, coords_curr$x) - buffer[i-1]
-    x_max <- max(coords_prev$x, coords_curr$x) + buffer[i-1]
-    y_min <- min(coords_prev$y, coords_curr$y) - buffer[i-1]
-    y_max <- max(coords_prev$y, coords_curr$y) + buffer[i-1]
+    x_min <- min(coords_prev$x, coords_curr$x) - buffer[i]
+    x_max <- max(coords_prev$x, coords_curr$x) + buffer[i]
+    y_min <- min(coords_prev$y, coords_curr$y) - buffer[i]
+    y_max <- max(coords_prev$y, coords_curr$y) + buffer[i]
     # 3. Generate contiguous 1D grid cell indices for this bounding box
     active_indices_list[[i]] <- filter(xy_df, x>=x_min, x<=x_max, y>=y_min, y<=y_max)$cellx-1
   }
