@@ -11,11 +11,16 @@ proc_telem(
   return_type = "sparse",
   max_err = NULL,
   trunc = 1e-08,
-  return_inadmissible = FALSE
+  return_inadmissible = FALSE,
+  nthreads = 1,
+  neighborhood = c("disc", "buffer"),
+  id = "id",
+  max_gap = NULL
 )
 }
 \arguments{
-\item{data}{A \code{telemetry} object from the \code{ctmm} package}
+\item{data}{A \code{telemetry} object from the \code{ctmm} package, or a list of them (one per
+individual), as returned by \code{ctmm::as.telemetry()} when the data contain several animals.}
 
 \item{cell_data}{A \verb{\link[terra]\{SpatRaster\}} stack of covariates that will be used in CTMC
 movement modeling. Cells with \code{NA} values will be considered areas to the animal cannot travel, i.e.,
@@ -23,7 +28,7 @@ likelihood surfaces will be \code{0} for those cells.}
 
 \item{time_unit}{Unit of measurement for numeric conversion of the POSIX timestamps
 in the telemetry data. Defaults to \code{"hours"}. Can specify, e.g.,
-\code{"seconds"} or \code{"days"}}
+\code{"secs"} or \code{"days"} (any unit accepted by \code{\link[base]{difftime}}).}
 
 \item{return_type}{Type of object returned. One if \code{"data.frame"}, \code{"sparse"} (sparse matrix),
 \code{"matrix_df"} (matrix form of \code{"data.frame"}), or \code{"dense"} (dense matrix).}
@@ -35,6 +40,26 @@ of the telemetry data.}
 \item{trunc}{The smallest probability value that is considered to be > 0. Defaults to 1.0e-8.}
 
 \item{return_inadmissible}{Logical. If there are locations outside the admissible areas of movement return the observations and raster cell numbers.}
+
+\item{nthreads}{Number of OpenMP threads used for the cell probability calculations. Defaults to 1.
+Has no effect if \code{walk} was built without OpenMP (a warning is given).}
+
+\item{neighborhood}{How the error neighborhood of each location is found. \code{"disc"} (default,
+fastest) uses every raster cell that touches an exact circle of radius \code{max_err}, computed
+arithmetically from the raster geometry. \code{"buffer"} uses \code{terra::buffer()} +
+\code{terra::cells(touches=TRUE)} as in earlier versions. The polygonised buffer sits slightly
+inside the true circle, so it can miss a few edge cells; otherwise the results are identical.
+Cell probabilities are computed in C++ either way.}
+
+\item{id}{Name of a column in \code{data} identifying individuals (default \code{"id"}). A ctmm
+\code{telemetry} object normally has no such column: its identity is stored in
+\code{attr(data, "info")$identity}, and that is used when the column is absent. If neither is
+available, list elements are named by their list names (or position), and a single object
+is individual \code{"1"}. Time differences are computed within individual and every individual
+starts a new, independent Markov chain in the likelihood. Set to \code{NULL} to ignore any \code{id} column.}
+
+\item{max_gap}{Optional. Gaps longer than \code{max_gap} (in \code{time_unit}) start a new, independent
+segment (the chain is restarted from \code{delta}).}
 }
 \description{
 Convert \code{ctmm} telemetry data object to a \code{SpatRaster} stack from the \code{terra} package.
@@ -43,7 +68,10 @@ Convert \code{ctmm} telemetry data object to a \code{SpatRaster} stack from the 
 This function takes the HDOP information in the \code{telemetry} object to
 produce a \code{SpatRaster} likelihood surface over the \code{SpatRaster} defined by
 the \code{raster} argument for each location. This can then be passed to
-CTMC HMM fitting functions.
+CTMC HMM fitting functions. The \code{times} data frame returned with the likelihood has
+columns \code{obs}, \code{id}, \code{seg}, \code{timestamp} and \code{dt}; \code{dt} is \code{0} at the first observation of
+every segment (individual or \code{max_gap} burst). Several outputs can be combined with
+\code{\link{bind_proc_data}}.
 }
 \author{
 Devin S. Johnson

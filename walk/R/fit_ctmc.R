@@ -10,10 +10,32 @@
 #' @param fit Logical. Should the likelihood be optimized?
 #' @param eq_prec Error rate of matrix exponential calculation. Defaults to \code{1.0e-8}. This is 
 #' a generous value. If the model is running slow, you can try reducing it to, say, \code{1.0e-4}.
+#' @param nthreads Number of OpenMP threads used to evaluate independent segments
+#' (individuals / `max_gap` bursts) of the joint likelihood in parallel. Defaults to 1.
+#' @param prune Optional threshold for dropping filtered state probabilities smaller than
+#' `prune * max(phi)` during the forward recursion. `0` (default) is exact.
+#' @param drop Probability mass that may be dropped per time step while the state distribution
+#' is propagated between observations: after each uniformization step, cells holding less than
+#' `drop / (number of steps * number of occupied cells)` are set to zero, so at most `drop` of the
+#' probability is lost per time step. Defaults to `eq_prec`, the truncation error that the
+#' matrix exponential already has. `drop = 0` keeps the exact support, which is much slower for
+#' long time steps on large grids.
+#' @param gradient Logical. Use the exact gradient of the log-likelihood (computed in the same
+#' forward pass as the likelihood, see \code{\link{ctmc_n2ll_grad}}) for the optimization and
+#' compute the Hessian by central differences of it? This needs far fewer likelihood evaluations
+#' than finite differences. Used when the model allows it (`form = "mult"`, `clip = 0`, `delta`
+#' not `"stationary"`) and no `gr` is given in `...`; otherwise finite differences are used.
 #' @param debug Integer from 1-4. Opens browser() at various points in the function call. Mostly for 
 #' package developers. 
 #' @param ... Additional arguments passed to the optimization function 
 #' \code{\link[optimx]{optimr}} from the \code{\link[optimx]{optimx-package}}.
+#' @details Data from several individuals (see the `id` argument of \code{\link{proc_Langevin}}
+#' and \code{\link{proc_telem}}, and \code{\link{bind_proc_data}}) are fitted as a single joint
+#' model: all individuals share the movement parameters, each segment (`walk_data$times$seg`;
+#' an individual, or a burst created with `max_gap`) is an independent chain started from
+#' `delta`, and the objective is the sum of the per-segment -2 log-likelihoods. A data set
+#' without a `seg` column is a single segment. `seg_info` gives the segment number, individual
+#' `id`, first row and number of observations of each segment.
 #' @author Devin S. Johnson
 #' @import optimx dplyr numDeriv
 #' @importFrom stats ppois qlogis
@@ -21,7 +43,8 @@
 fit_ctmc <- function(walk_data, 
                      model_parameters = ctmc_control(), 
                      pen_fun = NULL, hessian=TRUE, start=NULL, method="nlminb", 
-                     fit=TRUE, eq_prec = 1.0e-8, debug=0, ...){
+                     fit=TRUE, eq_prec = 1.0e-8, nthreads = 1, prune = 0, drop = eq_prec,
+                     gradient = TRUE, debug=0, ...){
   
   if(debug==1) browser()
   # cell_idx_df <- select(walk_data$q_r, cell, cellx) %>% distinct()
@@ -119,10 +142,25 @@ fit_ctmc <- function(walk_data,
   clip <- model_parameters$clip
   if(is.null(clip) || clip<0) clip <- 0
   
+  # independent segments (individuals / max_gap bursts); 0-based first row of each
+  times <- walk_data$times
+  seg <- times$seg
+  if(is.null(seg)) seg <- rep(1L, nrow(times))
+  seg_start <- which(c(TRUE, seg[-1] != seg[-length(seg)])) - 1L
+  if(any(duplicated(seg[seg_start + 1L]))) stop("Segments in 'walk_data$times' are not contiguous.")
+  dt <- times$dt
+  dt[seg_start + 1L] <- 0
+  if(any(dt < 0)) stop("Negative time differences within a segment. Re-run proc_telem() or proc_Langevin() with the 'id' argument.")
+  
   data_list <- list(
     N = nrow(walk_data$L),
+    seg_start = as.integer(seg_start),
+    Lt = as(Matrix::t(walk_data$L), "dgCMatrix"),
+    nthreads = as.integer(nthreads),
+    prune = prune,
+    drop = drop,
     ns = nrow(walk_data$q_r),
-    dt = walk_data$times$dt,
+    dt = dt,
     L = walk_data$L,
     delta = delta,
     hij=walk_data$q_m$h,
@@ -155,10 +193,36 @@ fit_ctmc <- function(walk_data,
   
   # ctmc_n2ll(par, data_list)
   
-  if(is.null(pen_fun)){
-    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, debug=0, ...)}
-  } else{
-    obj_fun <- function(par, data_list, ...){ctmc_n2ll(par, data_list, debug=0, ...) - 2*pen_fun(par)}
+  pen <- if(is.null(pen_fun)) function(par) 0 else pen_fun
+  # The value at the last gradient point is cached: optimisers usually ask for f and gr at the
+  # same parameters, and ctmc_n2ll_grad() returns both.
+  cache <- new.env(parent = emptyenv())
+  use_grad <- isTRUE(gradient) && grad_supported(data_list) && !("gr" %in% names(list(...)))
+  # Rate guard: the cost of one evaluation grows with the uniformization rate (the fastest total
+  # leaving rate), and an optimiser trial step can jump to a rate many times higher than anything
+  # seen so far, where a single evaluation can take hours on a large grid. Trial points whose
+  # rate exceeds 'rate_guard' times the largest rate at an evaluated point get the value Inf
+  # without computing the likelihood, so the optimiser shortens the step.
+  rate_guard <- 10
+  guard_hit <- make_rate_guard(data_list, rate_guard)
+  gr_fun <- function(par, data_list, ...){
+    if(!is.null(cache$par) && identical(par, cache$par) && !is.null(cache$g)) return(cache$g)
+    if(guard_hit(par)){ cache$par <- par; cache$f <- Inf; cache$g <- rep(NA_real_, length(par)); return(cache$g) }
+    v <- ctmc_n2ll_grad(par, data_list)
+    g <- attr(v, "gradient")
+    if(!is.null(pen_fun)) g <- g - 2*numDeriv::grad(pen_fun, par)
+    cache$par <- par; cache$f <- as.numeric(v) - 2*pen(par)
+    if(!is.finite(cache$f)) g[] <- NA_real_     # zero likelihood: let the optimiser back off
+    cache$g <- g
+    g
+  }
+  # With the analytic gradient the objective value comes from the same computation as the
+  # gradient, so the optimiser sees one consistent function.
+  obj_fun <- function(par, data_list, ...){
+    if(!is.null(cache$par) && identical(par, cache$par)) return(cache$f)
+    if(use_grad){ gr_fun(par, data_list); return(cache$f) }
+    if(guard_hit(par)) return(Inf)
+    as.numeric(ctmc_n2ll_joint(par, data_list, debug=0)) - 2*pen(par)
   }
   
   if(debug==2) browser()
@@ -169,7 +233,11 @@ fit_ctmc <- function(walk_data,
   if(fit){
     message('Optimizing likelihood...')  
     if(debug==2) browser()
-    opt <- optimx::optimr(par=par_start, fn=obj_fun, method=method, data_list=data_list, ...)
+    opt <- if(use_grad){
+      optimx::optimr(par=par_start, fn=obj_fun, gr=gr_fun, method=method, data_list=data_list, ...)
+    } else {
+      optimx::optimr(par=par_start, fn=obj_fun, method=method, data_list=data_list, ...)
+    }
     
     if(opt$convergence!=0){
       warning("There might be a problem with optimization... See output 'optimx' object.")
@@ -179,7 +247,8 @@ fit_ctmc <- function(walk_data,
     }
     if(hessian){
       message('Calculating Hessian and variance-covariance matrices...')  
-      H <- numDeriv::hessian(obj_fun, opt$par, data_list=data_list)
+      H <- if(use_grad) hess_from_grad(function(b) gr_fun(b, data_list), opt$par) else
+        numDeriv::hessian(obj_fun, opt$par, data_list=data_list)
       V <- 2*solve(H)
     } else{
       V <- NULL
@@ -201,8 +270,15 @@ fit_ctmc <- function(walk_data,
     H <- NULL
   }
   
+  seg_info <- data.frame(seg = seg[seg_start + 1L],
+                         id = if(is.null(times$id)) "1" else as.character(times$id[seg_start + 1L]),
+                         start = seg_start + 1L, n = diff(c(seg_start, length(seg))),
+                         stringsAsFactors = FALSE)
+  
   out <- list(
     par = par,
+    n_seg = length(seg_start),
+    seg_info = seg_info,
     vcov = V,
     log_lik = -0.5*opt$value,
     aic = opt$value + 2*length(par),
@@ -219,4 +295,38 @@ fit_ctmc <- function(walk_data,
   
   return(out)
   
+}
+
+# Hessian by central differences of an exact gradient (symmetrised); step 1e-4 * max(|x|, 1)
+#' @noRd
+hess_from_grad <- function(gfun, x, eps = 1e-4){
+  n <- length(x); H <- matrix(0, n, n)
+  for(k in seq_len(n)){
+    h <- eps * max(abs(x[k]), 1); e <- numeric(n); e[k] <- h
+    H[, k] <- (gfun(x + e) - gfun(x - e)) / (2 * h)
+  }
+  (H + t(H)) / 2
+}
+
+# Rate guard used by fit_ctmc(): returns a function g(par) that is TRUE (reject) if the
+# uniformization rate at 'par' exceeds 'factor' times the largest rate at a point accepted so
+# far (the first point is always accepted).
+#' @noRd
+make_rate_guard <- function(data_list, factor = 10){
+  amax <- NA_real_
+  function(par){
+    a <- unif_rate(par, data_list)
+    if(is.na(amax)) { amax <<- a; return(FALSE) }
+    if(is.finite(a) && a <= factor * amax) { amax <<- max(amax, a); return(FALSE) }
+    TRUE
+  }
+}
+
+# Uniformization rate alpha_0 = max_i |Q_ii| at 'par' (the cost of one likelihood evaluation is
+# proportional to it).
+#' @noRd
+unif_rate <- function(par, data_list){
+  a <- tryCatch(max(abs(Matrix::diag(get_Q(list(par = par, data_list = data_list))))),
+                error = function(e) Inf)
+  if(is.na(a)) Inf else a
 }

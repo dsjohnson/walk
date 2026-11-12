@@ -1,7 +1,7 @@
 Package: walk
 Title: Model Animal Movement With Continuous-Time Markov Chains
 Version: 0.0.1.9005
-Date: October 22, 2026
+Date: November 9, 2026
 Authors@R: 
     c(
     person("Devin S.", "Johnson", email="devin.johnson@noaa.gov", role = c("aut", "cre"))
@@ -11,7 +11,7 @@ License: CC0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports: 
-    Matrix, terra, dplyr, mvtnorm, numDeriv, optimx, sf, spdep, 
+    Matrix, terra, dplyr, numDeriv, optimx, sf, spdep, 
     ctmm, methods, tidyr, rARPACK, igraph
 LinkingTo: 
     Rcpp, RcppArmadillo

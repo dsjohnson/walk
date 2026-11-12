@@ -10,11 +10,17 @@ proc_Langevin(
   return_type = "sparse",
   max_err = NULL,
   trunc = 1e-08,
-  return_inadmissible = FALSE
+  return_inadmissible = FALSE,
+  nthreads = 1,
+  neighborhood = c("disc", "buffer"),
+  id = "id",
+  time_unit = NULL,
+  max_gap = NULL
 )
 }
 \arguments{
-\item{data}{A \code{simLangevin} or \verb{dataLangevin' object from the }langevinSSM` package}
+\item{data}{A \code{simLangevin} or \verb{dataLangevin' object from the }langevinSSM` package, or a list
+of them (e.g. one per individual).}
 
 \item{cell_data}{A \verb{\link[terra]\{SpatRaster\}} stack of covariates that will be used in CTMC
 movement modeling. Cells with \code{NA} values will be considered areas to the animal cannot travel, i.e.,
@@ -30,15 +36,42 @@ of the telemetry data.}
 \item{trunc}{The smallest probability value that is considered to be > 0. Defaults to 1.0e-8.}
 
 \item{return_inadmissible}{Logical. If there are locations outside the admissible areas of movement return the observations and raster cell numbers.}
+
+\item{nthreads}{Number of OpenMP threads used for the cell probability calculations. Defaults to 1.
+Has no effect if \code{walk} was built without OpenMP (a warning is given).}
+
+\item{neighborhood}{How the error neighborhood of each location is found. \code{"disc"} (default,
+fastest) uses every raster cell that touches an exact circle of radius \code{max_err}, computed
+arithmetically from the raster geometry. \code{"buffer"} uses \code{terra::buffer()} +
+\code{terra::cells(touches=TRUE)} as in earlier versions. The polygonised buffer sits slightly
+inside the true circle, so it can miss a few edge cells; otherwise the results are identical.
+Cell probabilities are computed in C++ either way.}
+
+\item{id}{Name of the column in \code{data} identifying individuals (default \code{"id"}). If the column
+is absent, list elements are named by their list names (or position), and a single object is
+individual \code{"1"}. Time differences are computed within individual and every individual
+starts a new, independent Markov chain in the likelihood. Rows of one individual must be
+contiguous and in time order. Set to \code{NULL} to ignore any \code{id} column.}
+
+\item{time_unit}{Only used when the \code{date} column is POSIXct (or Date): unit of the time
+differences \code{dt} (any unit accepted by \code{\link[base]{difftime}}). Defaults to the
+\code{"time.unit"} attribute of \code{data} (set by \code{langevinSSM::formatData()}), or \code{"hours"} if there
+is none. Numeric dates are used as they are.}
+
+\item{max_gap}{Optional. Gaps longer than \code{max_gap} (in the units of \code{dt}) start a new,
+independent segment (the chain is restarted from \code{delta}).}
 }
 \description{
 Convert \code{simLangevin}  or \verb{dataLangevin' object to a }SpatRaster\verb{stack from the}terra` package.
 }
 \details{
-This function takes the HDOP information in the \code{telemetry} object to
-produce a \code{SpatRaster} likelihood surface over the \code{SpatRaster} defined by
-the \code{raster} argument for each location. This can then be passed to
-CTMC HMM fitting functions.
+This function takes the error information in \code{data} to
+produce a likelihood surface over the \code{SpatRaster} defined by
+\code{cell_data} for each location. This can then be passed to
+CTMC HMM fitting functions. The \code{times} data frame returned with the likelihood has
+columns \code{obs}, \code{id}, \code{seg}, \code{timestamp} and \code{dt}; \code{dt} is \code{0} at the first observation of
+every segment (individual or \code{max_gap} burst). Several outputs can be combined with
+\code{\link{bind_proc_data}}.
 }
 \author{
 Devin S. Johnson

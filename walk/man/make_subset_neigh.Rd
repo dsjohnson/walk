@@ -11,7 +11,10 @@ make_subset_neigh(walk_data, vmax, min_buffer = NULL)
 \item{walk_data}{A \code{walk_ddl} object created by \code{walk::make_walk_data}}
 
 \item{vmax}{A single numerical value describing a rough estimate of the maximum velocity of the animal. This will be used for
-for calculating the buffer around movement subsets for each time step, \code{buffer[i] = vmax * sqrt(dt[i])}, for \verb{i = 1...,N}.
+for calculating the buffer around movement subsets for each time step, \code{buffer[i] = vmax * sqrt(dt[i])}, for \verb{i = 1...,N},
+where \code{dt[i]} is the time from observation \code{i-1} to \code{i}. The first row of each segment
+(\code{walk_data$times$seg}, i.e. each individual or \code{max_gap} burst) is treated like the first
+observation (no transition from the previous segment).
 The \code{vmax} argument is assumed to be in units of prjected coordinate units per time units in the original telemetry data, e.g., m/h usually.}
 
 \item{min_buffer}{A value >= 0 such that the buffer is guaranteed to be at least \code{min_buffer} to prevent numerical issues
