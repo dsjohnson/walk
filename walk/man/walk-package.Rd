@@ -14,6 +14,7 @@ Model animal movement using continuous-time Markov chain models.
 Authors:
 \itemize{
   \item Devin S. Johnson \email{devin.johnson@noaa.gov}
+  \item Brett T. McClintock \email{brett.mcclintock@noaa.gov}
 }
 
 }
