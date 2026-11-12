@@ -7,8 +7,10 @@
 using namespace Rcpp;
 using namespace arma;
 
-// Function prototypes
-arma::mat v_exp_Q_t(const arma::rowvec& v, const arma::sp_mat& Q, double t=1, double tolerance=1.0e-12); 
+// Uniformization: build P = I + Q/alpha_0 once per Q, then v * exp(Q t).
+double uniformization_P(const arma::sp_mat& Q, arma::sp_mat& P);
+arma::mat v_exp_Q_t_pre(const arma::rowvec& v, const arma::sp_mat& P,
+                        double alpha_0, double t, double tolerance, double log_tol_ext = 0.0);
   
 arma::sp_mat sp_mat_div(const arma::sp_mat& X, const arma::sp_mat& Y);
 

@@ -18,16 +18,22 @@ predict_ctmc(
 
 \item{walk_data}{A design data list produced by the function \code{\link{make_walk_data}}.}
 
-\item{aux_timestamp}{Additional POSIX times for which location prediction is desired.}
+\item{aux_timestamp}{Additional POSIX times for which location prediction is desired.
+For data with several segments (individuals or \code{max_gap} bursts) each segment gets the
+\code{aux_timestamp} times that fall within its time span.}
 
 \item{trunc_tol}{Level for truncating small location prediction probabilities.}
 
 \item{debug}{Developer debugging.}
 
-\item{...}{Aditional arguments passed to internal function \code{ctmc_predict_arma}.}
+\item{...}{Ignored.}
 }
 \description{
 Predict Movement Path From Fitted CTMC Model
+}
+\details{
+Each independent segment (\code{walk_data$times$seg}) is smoothed separately with the
+shared fitted rate matrix, and the results are stacked in the rows of \code{local_state_prob}.
 }
 \references{
 Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.

@@ -45,7 +45,7 @@ arma::vec soft_plus(const arma::vec& x, double a){
   if(a < 1.0) stop("'a' must be > 1 for soft-plus link function.");
   arma::vec out(x);
   for(int i=0; i<x.size(); i++){
-    out(i) = std::max(0.0, x(i)) + log1p(exp(-abs(a*x(i))))/a;
+    out(i) = std::max(0.0, x(i)) + std::log1p(std::exp(-std::abs(a*x(i))))/a;   // std::abs: plain abs() can resolve to the int version
   }
   return out;
 } 

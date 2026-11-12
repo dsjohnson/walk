@@ -13,6 +13,10 @@ fit_ctmc(
   method = "nlminb",
   fit = TRUE,
   eq_prec = 1e-08,
+  nthreads = 1,
+  prune = 0,
+  drop = eq_prec,
+  gradient = TRUE,
   debug = 0,
   ...
 )
@@ -37,6 +41,25 @@ form \code{list(beta_l=c(), beta_q_r=c(), beta_q_r=c())}.}
 \item{eq_prec}{Error rate of matrix exponential calculation. Defaults to \code{1.0e-8}. This is
 a generous value. If the model is running slow, you can try reducing it to, say, \code{1.0e-4}.}
 
+\item{nthreads}{Number of OpenMP threads used to evaluate independent segments
+(individuals / \code{max_gap} bursts) of the joint likelihood in parallel. Defaults to 1.}
+
+\item{prune}{Optional threshold for dropping filtered state probabilities smaller than
+\code{prune * max(phi)} during the forward recursion. \code{0} (default) is exact.}
+
+\item{drop}{Probability mass that may be dropped per time step while the state distribution
+is propagated between observations: after each uniformization step, cells holding less than
+\verb{drop / (number of steps * number of occupied cells)} are set to zero, so at most \code{drop} of the
+probability is lost per time step. Defaults to \code{eq_prec}, the truncation error that the
+matrix exponential already has. \code{drop = 0} keeps the exact support, which is much slower for
+long time steps on large grids.}
+
+\item{gradient}{Logical. Use the exact gradient of the log-likelihood (computed in the same
+forward pass as the likelihood, see \code{\link{ctmc_n2ll_grad}}) for the optimization and
+compute the Hessian by central differences of it? This needs far fewer likelihood evaluations
+than finite differences. Used when the model allows it (\code{form = "mult"}, \code{clip = 0}, \code{delta}
+not \code{"stationary"}) and no \code{gr} is given in \code{...}; otherwise finite differences are used.}
+
 \item{debug}{Integer from 1-4. Opens browser() at various points in the function call. Mostly for
 package developers.}
 
@@ -45,6 +68,15 @@ package developers.}
 }
 \description{
 Fit CTMC movement model to telemetry data
+}
+\details{
+Data from several individuals (see the \code{id} argument of \code{\link{proc_Langevin}}
+and \code{\link{proc_telem}}, and \code{\link{bind_proc_data}}) are fitted as a single joint
+model: all individuals share the movement parameters, each segment (\code{walk_data$times$seg};
+an individual, or a burst created with \code{max_gap}) is an independent chain started from
+\code{delta}, and the objective is the sum of the per-segment -2 log-likelihoods. A data set
+without a \code{seg} column is a single segment. \code{seg_info} gives the segment number, individual
+\code{id}, first row and number of observations of each segment.
 }
 \author{
 Devin S. Johnson
