@@ -49,7 +49,7 @@ ctmc_n2ll <- function(par, data_list, debug=0, ...){
     a_r = data_list$a_r,
     l_r = data_list$l_r,
     u_r = data_list$u_r,
-    link_m = which(data_list$link_m==c("soft_plus", "log")),
+    link_m = which(data_list$link_m==c("soft_plus", "log", "logit")), # Updated to include logit
     a_m = data_list$a_m,
     form = which(data_list$form==c("mult", "sde")),
     k = data_list$k,
@@ -122,7 +122,7 @@ ctmc_n2ll_joint <- function(par, data_list, by_segment=FALSE, debug=0, ...){
     eq_prec = data_list$eq_prec,
     link_r = which(data_list$link_r==c("soft_plus", "log", "logit")),
     a_r = data_list$a_r, l_r = data_list$l_r, u_r = data_list$u_r,
-    link_m = which(data_list$link_m==c("soft_plus", "log")),
+    link_m = which(data_list$link_m==c("soft_plus", "log", "logit")), # Updated to include logit
     a_m = data_list$a_m,
     form = which(data_list$form==c("mult", "sde")),
     k = data_list$k, norm = data_list$norm, clip = data_list$clip,
@@ -168,7 +168,8 @@ ctmc_n2ll_grad <- function(par, data_list, by_segment = FALSE){
     delta = matrix(data_list$delta, nrow = 1), eq_prec = data_list$eq_prec,
     link_r = which(data_list$link_r == c("soft_plus", "log", "logit")),
     a_r = data_list$a_r, l_r = data_list$l_r, u_r = data_list$u_r,
-    link_m = which(data_list$link_m == c("soft_plus", "log")), a_m = data_list$a_m,
+    link_m = which(data_list$link_m == c("soft_plus", "log", "logit")), # Updated to include logit
+    a_m = data_list$a_m,
     norm = data_list$norm, nthreads = as.integer(nthreads), prune = prune, drop = drop)
   # parameter order: beta_q_r, beta_q_m, logit_p (as in par_map)
   ord <- c(par_map$beta_q_r, par_map$beta_q_m, par_map$logit_p)

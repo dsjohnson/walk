@@ -3,7 +3,7 @@
 #' @aliases ctmc_model
 #' @aliases ctmc_control
 #' @param form Model formula for CTMC model components, residency or movement
-#' @param link A link funtion for the residency or movement model. One of `"soft_plus"` or `"log"`.
+#' @param link A link function for the residency or movement model. One of `"soft_plus"`, `"log"`, or `"logit"`.
 #' @param a Scale parameter for the `"soft_plus"` link function. Ignored for `link="log"`. The `a` parameter determines the approximation to 
 #' a hard plus function, i.e., as `a` becomes large the soft plus function converges to `g^{-1}(x) = max(0,x)`. For this specification, `a` must be greater than or equal to 1.
 #' @param L Lower bound for general logit link
@@ -35,7 +35,9 @@ ctmc_model <- function(form=~1, link="soft_plus", a=1, L=0, U=0){
 #' @export
 ctmc_control <- function(q_r = ctmc_model(), q_m=ctmc_model(), 
                          p=FALSE, delta="uniform", form="mult", norm=TRUE, clip=0){
-  if(q_m$link=="logit") stop("'logit' link not implimented for movement portion of the CTMC model. Please select either 'log' or 'soft_plus'")
+  # Safeguard removed to allow the logit link for the Barker model movement matrix:
+  # if(q_m$link=="logit") stop("'logit' link not implimented for movement portion of the CTMC model. Please select either 'log' or 'soft_plus'")
+  
   if(clip<0) stop("'clip' must be > 0!")
   if(length(attr(terms(q_r$form),"term.labels"))>0 & form=="sde") stop("The SDE cannot handle q_r forms other than ~1 at this time.")
   if(form=="sde") norm <- FALSE

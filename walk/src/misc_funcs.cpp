@@ -1,4 +1,3 @@
-
 // [[Rcpp::depends(RcppArmadillo)]]
 
 #include "walk_types.h"
@@ -78,11 +77,11 @@ arma::sp_mat clip_Q(const arma::sp_mat& Q, double clip) {
 // }
 
 /*
-arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8) {
-  arma::mat out = expQ2::sv_exp_Q(phi, lnG, prec, false, true);
-  return out;
-}
-*/
+ arma::mat phi_exp_lnG(const arma::mat& phi, const arma::sp_mat&  lnG, const double& prec=1.0e-8) {
+ arma::mat out = expQ2::sv_exp_Q(phi, lnG, prec, false, true);
+ return out;
+ }
+ */
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
@@ -99,10 +98,13 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
   } else {
     Qr.diag() = logit(Xb_q_r, l_r, u_r);
   }
+  
   if(link_m==1){
     Qm_vals = soft_plus(Xb_q_m, a_m);
-  } else{
+  } else if(link_m==2){
     Qm_vals = trunc_exp(Xb_q_m);
+  } else {
+    Qm_vals = logit(Xb_q_m, 0.0, 1.0); // Bounded 0 to 1 for the Barker ratio
   }
   
   arma::sp_mat Qm(from_to, Qm_vals, ns, ns);
