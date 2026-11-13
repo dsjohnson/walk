@@ -23,8 +23,9 @@
 #' @param gradient Logical. Use the exact gradient of the log-likelihood (computed in the same
 #' forward pass as the likelihood, see \code{\link{ctmc_n2ll_grad}}) for the optimization and
 #' compute the Hessian by central differences of it? This needs far fewer likelihood evaluations
-#' than finite differences. Used when the model allows it (`form = "mult"`, `clip = 0`, `delta`
-#' not `"stationary"`) and no `gr` is given in `...`; otherwise finite differences are used.
+#' than finite differences. Available for all model forms, `clip` values and `delta` choices
+#' (see \code{\link{ctmc_n2ll_grad}}); finite differences are used only with `gradient = FALSE`
+#' or when a `gr` is given in `...`.
 #' @param debug Integer from 1-4. Opens browser() at various points in the function call. Mostly for 
 #' package developers. 
 #' @param ... Additional arguments passed to the optimization function 
@@ -51,8 +52,25 @@ fit_ctmc <- function(walk_data,
   # data <- data %>% left_join(cell_idx_df, by="cell")
   
   if(is.null(model_parameters$q_r$form) | is.null(model_parameters$q_m$form)) stop("Model formulas must be specified for both residency and movement.")
+  form <- model_parameters$form
+  if(!is.null(form)){
+    if(length(form) != 1 || !form %in% c("mult","sde","logistic")) stop("The 'form' object must be one of 'mult', 'sde', or 'logistic'.")
+  } else{
+    form<- "mult"
+  }
+  
   X_q_r <- dm_q_r(model_parameters$q_r$form, walk_data)
-  X_q_m <- dm_q_m(model_parameters$q_m$form, walk_data)
+  X_q_m_cell <- NULL
+  if(form == "logistic"){
+    # q_ij = lambda_i * logistic((x_j - x_i)'b): cell-level design x_i, edge design = differences
+    X_q_m_cell <- dm_q_cell(model_parameters$q_m$form, walk_data)
+    from_x <- match(walk_data$q_m$from_cellx, walk_data$q_r$cellx)
+    to_x <- match(walk_data$q_m$cellx, walk_data$q_r$cellx)
+    X_q_m <- X_q_m_cell[to_x, , drop=FALSE] - X_q_m_cell[from_x, , drop=FALSE]
+    rownames(X_q_m) <- NULL
+  } else {
+    X_q_m <- dm_q_m(model_parameters$q_m$form, walk_data)
+  }
   
   par_map <- list(beta_q_r = 1:ncol(X_q_r))
   if(ncol(X_q_m)!=0) par_map$beta_q_m <- c(1:ncol(X_q_m)) + ncol(X_q_r)
@@ -67,10 +85,13 @@ fit_ctmc <- function(walk_data,
     if(length(delta) != nrow(walk_data$q_r)) stop("The length of 'delta' vector is not equal to the number of cells.")
     delta <- delta/sum(delta)
   }
-  if(delta=="uniform"){
-    delta <- rep(1,nrow(walk_data$q_r))
-    delta <- delta/sum(delta)
-  }
+  if(is.character(delta)){
+    if(length(delta) != 1 || !delta %in% c("uniform", "stationary")) stop("'delta' must be \"uniform\", \"stationary\", or a numeric vector.")
+    if(delta == "uniform"){
+      delta <- rep(1,nrow(walk_data$q_r))
+      delta <- delta/sum(delta)
+    }
+  } else if(!is.numeric(delta)) stop("'delta' must be \"uniform\", \"stationary\", or a numeric vector.")
   
   if(is.null(model_parameters$q_r$link)){
     link_r <- "soft_plus"
@@ -82,16 +103,9 @@ fit_ctmc <- function(walk_data,
   } else{
     link_m <- model_parameters$q_m$link
   }
+  if(form == "logistic") link_m <- "logistic"   # fixed by the form
   if(!link_r%in%c("soft_plus","log","logit")) stop("The 'link_r' objects in must be either 'soft_plus', 'log', or 'logit'")
-  if(!link_m%in%c("soft_plus","log")) stop("The 'link_m' objects in must be either 'soft_plus' or 'log'.")
-  
-  
-  form <- model_parameters$form
-  if(!is.null(form)){
-    if(!form%in%c("mult","sde")) stop("The 'form' object in must be either 'mult',or 'sde'.")
-  } else{
-    form<- "mult"
-  }
+  if(!link_m%in%c("soft_plus","log","logistic")) stop("The 'link_m' objects in must be either 'soft_plus' or 'log'.")
   
   
   if(is.null(model_parameters$q_r$a)){
@@ -123,7 +137,7 @@ fit_ctmc <- function(walk_data,
   
   if(a_r<1 | a_m<1) stop("The 'a' parameter for the 'soft_plus' and 'sde' link functions must be >1.")
   
-  if(form %in% c("mult","add")){
+  if(form != "sde"){
     k <- 0
   } else {
     k <- if(attr(walk_data$q_m, "directions")=="rook"){
@@ -137,10 +151,25 @@ fit_ctmc <- function(walk_data,
   
   norm <- model_parameters$norm
   if(is.null(norm) | !is.logical(norm)) norm <- TRUE
-  if(model_parameters$form=="sde") norm <- FALSE
+  if(form %in% c("sde", "logistic")) norm <- FALSE
+  
+  # closed-form limiting distribution of the "logistic" form needs every edge to have its reverse
+  ud_closed <- FALSE
+  if(form == "logistic"){
+    fwd <- paste(walk_data$q_m$from_cellx, walk_data$q_m$cellx)
+    rev <- paste(walk_data$q_m$cellx, walk_data$q_m$from_cellx)
+    ud_closed <- all(rev %in% fwd)
+    if(!ud_closed) warning("Some neighbour relations are not symmetric; the closed-form limiting ",
+                           "distribution of form = 'logistic' does not hold and a numerical one is used.")
+  }
   
   clip <- model_parameters$clip
   if(is.null(clip) || clip<0) clip <- 0
+  
+  # drift transform of the "sde" form: Inf = hard plus (default), finite > 0 = soft plus
+  sde_a <- model_parameters$sde_a
+  if(is.null(sde_a)) sde_a <- Inf
+  if(!is.numeric(sde_a) || length(sde_a) != 1 || is.na(sde_a) || sde_a <= 0) stop("'sde_a' must be a single number > 0 (Inf for the hard plus).")
   
   # independent segments (individuals / max_gap bursts); 0-based first row of each
   times <- walk_data$times
@@ -181,6 +210,9 @@ fit_ctmc <- function(walk_data,
     k = k,
     norm = norm,
     clip = clip,
+    sde_a = sde_a,
+    X_q_m_cell = X_q_m_cell,
+    ud_closed = ud_closed,
     cell_map = walk_data$q_r[,c("cell","cellx")]
   )
   

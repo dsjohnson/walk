@@ -87,16 +87,17 @@ predict_ctmc <- function(fit, walk_data, aux_timestamp=NULL, trunc_tol=1.0e-8, d
       hij = data_list$hij,
       eq_prec = data_list$eq_prec, 
       trunc_tol = trunc_tol,
-      link_r = which(data_list$link_r==c("soft_plus", "log", "logit")),
+      link_r = link_r_code(data_list),
       a_r = data_list$a_r,
       l_r = data_list$l_r,
       u_r = data_list$u_r,
-      link_m = which(data_list$link_m==c("soft_plus", "log")),
+      link_m = link_m_code(data_list),
       a_m = data_list$a_m,
-      form = which(data_list$form==c("mult", "sde")),
+      form = form_code(data_list),
       k = data_list$k,
       norm = data_list$norm,
-      clip = data_list$clip
+      clip = data_list$clip,
+      sde_a = sde_a_of(data_list)
     )
     tk$row_obs <- NULL
     res_T[[k]] <- tk

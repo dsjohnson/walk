@@ -57,8 +57,9 @@ long time steps on large grids.}
 \item{gradient}{Logical. Use the exact gradient of the log-likelihood (computed in the same
 forward pass as the likelihood, see \code{\link{ctmc_n2ll_grad}}) for the optimization and
 compute the Hessian by central differences of it? This needs far fewer likelihood evaluations
-than finite differences. Used when the model allows it (\code{form = "mult"}, \code{clip = 0}, \code{delta}
-not \code{"stationary"}) and no \code{gr} is given in \code{...}; otherwise finite differences are used.}
+than finite differences. Available for all model forms, \code{clip} values and \code{delta} choices
+(see \code{\link{ctmc_n2ll_grad}}); finite differences are used only with \code{gradient = FALSE}
+or when a \code{gr} is given in \code{...}.}
 
 \item{debug}{Integer from 1-4. Opens browser() at various points in the function call. Mostly for
 package developers.}

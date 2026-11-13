@@ -20,10 +20,11 @@
 // one call costs much less than the 1 + n_par evaluations of a forward-
 // difference gradient.
 //
-// Supported: form = "mult", links soft_plus / log / logit (q_r), soft_plus /
-// log (q_m), norm TRUE / FALSE, outlier mixture p, fixed delta, prune, drop.
-// Not supported (the R side falls back to numerical derivatives): form "sde",
-// clip > 0, delta = "stationary".
+// Supported: form = "mult" (links soft_plus / log / logit (q_r), soft_plus /
+// log (q_m), norm TRUE / FALSE) and form = "sde"; clip >= 0; outlier mixture p;
+// fixed delta or delta = "stationary" (the R side passes d delta / d theta, see
+// ctmc_n2ll_grad()); prune, drop. Kinks (max(0, x) in "sde", the clip threshold)
+// get one-sided / averaged derivatives, see build_Q_grad().
 // ===========================================================================
 
 namespace {
@@ -194,7 +195,10 @@ double segment_g(arma::uword i0, arma::uword i1, const arma::uword* Lcp, const a
                  const double* Lv, const arma::vec& dt, const arma::rowvec& delta, double p,
                  double dp_dlogit, int ip, arma::uword ns, const PMat& P, int np, double alpha_0,
                  double tol, double prune, double drop, CtlG& ctl, std::vector<int>& zobs,
-                 WorkG& ws, double* g) {
+                 WorkG& ws, double* g, const arma::mat& ddelta) {
+  // ddelta: ns x npq matrix d delta_j / d theta_k for the rate parameters (delta = "stationary"),
+  // or 0 columns for a fixed delta
+  const int nd = (int)ddelta.n_cols;
   const int S = ws.S;
   double ll = 0.0;
   bool full = (p > 0.0);
@@ -208,20 +212,29 @@ double segment_g(arma::uword i0, arma::uword i1, const arma::uword* Lcp, const a
       for (arma::uword k = k0; k < k1; ++k) {
         arma::uword j = Lri[k];
         double val = delta[j] * Lv[k];
-        if (val > 0.0) { zero_cell(ws.vc, j, S); ws.vc[j * S] = val; ws.act.push_back(j); u += val; }  // delta, L do not depend on par
+        bool nzd = false;
+        for (int c = 0; c < nd; ++c) if (ddelta(j, c) != 0.0) { nzd = true; break; }
+        if (val > 0.0 || (nzd && Lv[k] > 0.0)) {
+          zero_cell(ws.vc, j, S); ws.vc[j * S] = val; ws.act.push_back(j); u += val;
+          for (int c = 0; c < nd; ++c) { double dv = ddelta(j, c) * Lv[k]; ws.vc[j * S + 1 + c] = dv; du[c] += dv; }
+        }
       }
     } else {
       std::vector<double> Ld;
       if (k1 > k0) { Ld.assign(ns, 0.0); for (arma::uword k = k0; k < k1; ++k) Ld[Lri[k]] = Lv[k]; }
       for (arma::uword j = 0; j < ns; ++j) {
-        double val = delta[j], dval = 0.0;
+        double val = delta[j], dval = 0.0, w = 1.0;
         if (k1 > k0) {
           dval = delta[j] * (-Ld[j] + 1.0 / ns) * dp_dlogit;
-          val = val * ((1.0 - p) * Ld[j]) + (p / ns) * val;
+          w = (1.0 - p) * Ld[j] + p / ns;
+          val = val * w;
         }
-        if (val > 0.0) {
+        bool nzd = false;
+        for (int c = 0; c < nd; ++c) if (ddelta(j, c) != 0.0) { nzd = true; break; }
+        if (val > 0.0 || (nzd && w > 0.0)) {
           zero_cell(ws.vc, j, S); ws.vc[j * S] = val; ws.act.push_back(j); u += val;
           if (ip >= 0) { ws.vc[j * S + 1 + ip] = dval; du[ip] += dval; }
+          for (int c = 0; c < nd; ++c) { double dv = ddelta(j, c) * w; ws.vc[j * S + 1 + c] = dv; du[c] += dv; }
         }
       }
     }
@@ -391,44 +404,62 @@ inline void link_fn(int link, double x, double a, double L, double U, double& f,
   }
 }
 
-}  // namespace
-
-//' Joint CTMC -2 log-likelihood and its gradient (internal)
-//' @return list(n2ll = per-segment -2 log L, grad = n_par x n_seg matrix of derivatives,
-//'   zero_obs, alpha_0)
-//' @keywords internal
-// [[Rcpp::export]]
-Rcpp::List ctmc_n2ll_grad_arma(
-    const arma::sp_mat& L, const arma::vec& dt, const arma::uvec& seg_start, int ns,
-    const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m,
-    const arma::mat& X_q_r, const arma::mat& X_q_m, double p, bool has_p,
-    const arma::rowvec& delta, double eq_prec,
-    int link_r, double a_r, double l_r, double u_r, int link_m, double a_m, bool norm,
-    int nthreads = 1, double prune = 0.0, double drop = 0.0)
-{
-  arma::uword N = dt.n_elem;
-  if (L.n_cols != N) Rcpp::stop("ncol(L) must equal length(dt)");
-  if ((int)L.n_rows != ns) Rcpp::stop("nrow(L) must equal ns");
-  check_seg_start(seg_start, N);
+// Rate matrix Q (NOT yet scaled to P) and dQ/dtheta_k, k < npq, in CSR form, diagonal first.
+// Mirrors load_Q() (form = 1, "mult"; also R form "logistic" = form 1 with link_m = 3 (logistic) and
+// norm = FALSE) and load_Q_sde() (form = 2, "sde") in misc_funcs.cpp,
+// including clip_Q().  Off-diagonal entries are kept even when their value is 0 (their
+// derivative need not be).
+//  - "sde": Q_ij = exp(Xb_r,i)/(k h_ij^2) + f(Xb_m,ij)/((k/2) h_ij), f = sde_drift(., sde_a).
+//    With the soft plus (sde_a > 0) f is smooth, f' = logistic(a x). With the hard plus (default)
+//    f = max(0, x); the derivative of
+//    max(0, x) is taken as 1 for x > 0, 0 for x < 0 and 1/2 at x = 0 (the average of the one-
+//    sided derivatives; this matters at the default start beta_q_m = 0, where every edge has
+//    x = 0 and the derivative 0 would leave beta_q_m stuck).
+//  - clip: rows with total rate q_i = -Q_ii > clip are scaled by clip/q_i, so
+//    d(clip Q_ij / q_i) = (clip/q_i) (dQ_ij - Q_ij dq_i / q_i),  dq_i = -dQ_ii.
+//    As in load_Q(), clip is not applied with the logit link for q_r in the "mult" form.
+void build_Q_grad(PMat& P, const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m,
+                  const arma::mat& X_q_r, const arma::mat& X_q_m, const arma::vec& hij, int ns,
+                  int link_r, double a_r, double l_r, double u_r, int link_m, double a_m,
+                  int form, double k_sde, bool norm, double clip, double sde_a) {
   const arma::uword E = from_to.n_cols;
-  const int kr = X_q_r.n_cols, km = X_q_m.n_cols;
-  if ((int)X_q_r.n_rows != ns || Xb_q_r.n_elem != (arma::uword)ns) Rcpp::stop("X_q_r / Xb_q_r do not match ns");
-  if (Xb_q_m.n_elem != E || (km > 0 && X_q_m.n_rows != E)) Rcpp::stop("X_q_m / Xb_q_m do not match from_to");
-  const int npq = kr + km, np = npq + (has_p ? 1 : 0), S = 1 + np;
-  const int ip = has_p ? npq : -1;
-
-  // ---- rates and their derivatives --------------------------------------
+  const int kr = X_q_r.n_cols, km = X_q_m.n_cols, npq = kr + km;
+  P.npq = npq;
+  if (form == 2) {
+    norm = false;
+    if (hij.n_elem != E) Rcpp::stop("hij must have one entry per edge for form = 'sde'");
+    if (!(k_sde > 0.0)) Rcpp::stop("k must be > 0 for form = 'sde'");
+  }
   std::vector<double> r(ns), dr(ns), mv(E), dm(E);
-  for (int i = 0; i < ns; ++i) link_fn(link_r, Xb_q_r[i], a_r, l_r, u_r, r[i], dr[i]);
-  for (arma::uword e = 0; e < E; ++e) link_fn(link_m == 1 ? 1 : 2, Xb_q_m[e], a_m, 0, 0, mv[e], dm[e]);
-  // rows of P: count out-edges (from = row 0 of from_to)
+  if (form == 1) {
+    for (int i = 0; i < ns; ++i) link_fn(link_r, Xb_q_r[i], a_r, l_r, u_r, r[i], dr[i]);
+    for (arma::uword e = 0; e < E; ++e) {
+      if (link_m == 3) {                 // logistic, as load_Q(): m = 1/(1 + exp(-x)), dm = m (1 - m)
+        const double x = Xb_q_m[e];
+        mv[e] = (x >= 0.0) ? 1.0 / (1.0 + std::exp(-x)) : std::exp(x) / (1.0 + std::exp(x));
+        dm[e] = mv[e] * (1.0 - mv[e]);
+      } else link_fn(link_m == 1 ? 1 : 2, Xb_q_m[e], a_m, 0, 0, mv[e], dm[e]);
+    }
+  } else {
+    for (int i = 0; i < ns; ++i) { r[i] = arma::trunc_exp(Xb_q_r[i]); dr[i] = r[i]; }
+    const bool soft = (sde_a > 0.0) && std::isfinite(sde_a);
+    for (arma::uword e = 0; e < E; ++e) {
+      double x = Xb_q_m[e];
+      if (soft) {                        // soft plus, as sde_drift(): derivative = logistic(a x)
+        mv[e] = std::max(0.0, x) + std::log1p(std::exp(-std::abs(sde_a * x))) / sde_a;
+        dm[e] = (x >= 0.0) ? 1.0 / (1.0 + std::exp(-sde_a * x)) : std::exp(sde_a * x) / (1.0 + std::exp(sde_a * x));
+      } else {
+        mv[e] = std::max(0.0, x); dm[e] = (x > 0.0) ? 1.0 : ((x < 0.0) ? 0.0 : 0.5);
+      }
+    }
+  }
+  // rows of Q: count out-edges (from = row 0 of from_to)
   std::vector<arma::uword> cnt(ns, 0);
   for (arma::uword e = 0; e < E; ++e) {
     if ((int)from_to(0, e) >= ns || (int)from_to(1, e) >= ns) Rcpp::stop("from_to out of range");
     if (from_to(0, e) == from_to(1, e)) Rcpp::stop("from_to contains self transitions");
     cnt[from_to(0, e)]++;
   }
-  PMat P; P.npq = npq;
   P.rp.assign(ns + 1, 0);
   for (int i = 0; i < ns; ++i) P.rp[i + 1] = P.rp[i] + cnt[i] + 1;   // + diagonal
   const arma::uword nnz = P.rp[ns];
@@ -445,19 +476,24 @@ Rcpp::List ctmc_n2ll_grad_arma(
   for (arma::uword e = 0; e < E; ++e) {
     arma::uword i = from_to(0, e), j = from_to(1, e), q = pos[i]++;
     P.ci[q] = j;
-    double mt = norm ? (Sm[i] > 0 ? mv[e] / Sm[i] : 0.0) : mv[e];
-    double Qij = r[i] * mt;
-    P.v[q] = Qij;
     double* d = npq ? &P.dv[q * npq] : nullptr;
-    for (int k = 0; k < kr; ++k) d[k] = dr[i] * X_q_r(i, k) * mt;
-    for (int k = 0; k < km; ++k) {
-      double dmt = norm ? (Sm[i] > 0 ? (dm[e] * X_q_m(e, k) * Sm[i] - mv[e] * Sdm[i * km + k]) / (Sm[i] * Sm[i]) : 0.0)
-                        : dm[e] * X_q_m(e, k);
-      d[kr + k] = r[i] * dmt;
+    if (form == 1) {
+      double mt = norm ? (Sm[i] > 0 ? mv[e] / Sm[i] : 0.0) : mv[e];
+      P.v[q] = r[i] * mt;
+      for (int k = 0; k < kr; ++k) d[k] = dr[i] * X_q_r(i, k) * mt;
+      for (int k = 0; k < km; ++k) {
+        double dmt = norm ? (Sm[i] > 0 ? (dm[e] * X_q_m(e, k) * Sm[i] - mv[e] * Sdm[i * km + k]) / (Sm[i] * Sm[i]) : 0.0)
+                          : dm[e] * X_q_m(e, k);
+        d[kr + k] = r[i] * dmt;
+      }
+    } else {
+      const double h = hij[e], cD = 1.0 / (k_sde * h * h), cZ = 1.0 / (0.5 * k_sde * h);
+      P.v[q] = r[i] * cD + mv[e] * cZ;
+      for (int k = 0; k < kr; ++k) d[k] = dr[i] * X_q_r(i, k) * cD;
+      for (int k = 0; k < km; ++k) d[kr + k] = dm[e] * X_q_m(e, k) * cZ;
     }
   }
-  // diagonal = - row sums; uniformization rate; scale to P
-  double alpha_0 = 0.0;
+  // diagonal = - row sums
   for (int i = 0; i < ns; ++i) {
     double s = 0.0; arma::uword dq = P.rp[i];
     for (arma::uword q = dq + 1; q < P.rp[i + 1]; ++q) {
@@ -472,13 +508,66 @@ Rcpp::List ctmc_n2ll_grad_arma(
       for (int k = kr; k < npq; ++k) P.dv[dq * npq + k] = 0.0;
     }
     P.v[dq] = -s;
-    if (std::abs(s) > alpha_0) alpha_0 = std::abs(s);
   }
+  // clip_Q()
+  if (clip > 0.0 && !(form == 1 && link_r == 3)) {
+    std::vector<double> dqi(std::max(npq, 1));
+    for (int i = 0; i < ns; ++i) {
+      arma::uword dq = P.rp[i];
+      const double qi = -P.v[dq];
+      if (!(qi > clip)) continue;
+      const double f = clip / qi;
+      for (int k = 0; k < npq; ++k) dqi[k] = -P.dv[dq * npq + k];
+      for (arma::uword q = dq; q < P.rp[i + 1]; ++q) {
+        for (int k = 0; k < npq; ++k) P.dv[q * npq + k] = f * (P.dv[q * npq + k] - P.v[q] * dqi[k] / qi);
+        P.v[q] *= f;
+      }
+    }
+  }
+}
+
+}  // namespace
+
+//' Joint CTMC -2 log-likelihood and its gradient (internal)
+//' @return list(n2ll = per-segment -2 log L, grad = n_par x n_seg matrix of derivatives,
+//'   zero_obs, alpha_0)
+//' @keywords internal
+// [[Rcpp::export]]
+Rcpp::List ctmc_n2ll_grad_arma(
+    const arma::sp_mat& L, const arma::vec& dt, const arma::uvec& seg_start, int ns,
+    const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m,
+    const arma::mat& X_q_r, const arma::mat& X_q_m, double p, bool has_p,
+    const arma::rowvec& delta, double eq_prec,
+    int link_r, double a_r, double l_r, double u_r, int link_m, double a_m, bool norm,
+    const arma::vec& hij, int form, double k_sde, double clip, const arma::mat& ddelta,
+    int nthreads = 1, double prune = 0.0, double drop = 0.0, double sde_a = 0.0)
+{
+  arma::uword N = dt.n_elem;
+  if (L.n_cols != N) Rcpp::stop("ncol(L) must equal length(dt)");
+  if ((int)L.n_rows != ns) Rcpp::stop("nrow(L) must equal ns");
+  check_seg_start(seg_start, N);
+  const arma::uword E = from_to.n_cols;
+  const int kr = X_q_r.n_cols, km = X_q_m.n_cols;
+  if ((int)X_q_r.n_rows != ns || Xb_q_r.n_elem != (arma::uword)ns) Rcpp::stop("X_q_r / Xb_q_r do not match ns");
+  if (Xb_q_m.n_elem != E || (km > 0 && X_q_m.n_rows != E)) Rcpp::stop("X_q_m / Xb_q_m do not match from_to");
+  const int npq = kr + km, np = npq + (has_p ? 1 : 0), S = 1 + np;
+  const int ip = has_p ? npq : -1;
+  (void)E;
+
+  // ---- rates and their derivatives --------------------------------------
+  PMat P; P.npq = npq;
+  build_Q_grad(P, from_to, Xb_q_r, Xb_q_m, X_q_r, X_q_m, hij, ns, link_r, a_r, l_r, u_r,
+               link_m, a_m, form, k_sde, norm, clip, sde_a);
+  // uniformization rate (held fixed when differentiating, see top); scale Q to P = I + Q/alpha
+  double alpha_0 = 0.0;
+  for (int i = 0; i < ns; ++i) alpha_0 = std::max(alpha_0, std::abs(P.v[P.rp[i]]));
   if (alpha_0 > 0.0) {
-    for (arma::uword q = 0; q < nnz; ++q) P.v[q] /= alpha_0;
+    for (arma::uword q = 0; q < P.v.size(); ++q) P.v[q] /= alpha_0;
     for (int i = 0; i < ns; ++i) P.v[P.rp[i]] += 1.0;
     for (std::size_t q = 0; q < P.dv.size(); ++q) P.dv[q] /= alpha_0;
   }
+  if (ddelta.n_cols != 0 && ((int)ddelta.n_cols != npq || (int)ddelta.n_rows != ns))
+    Rcpp::stop("ddelta must be ns x (number of rate parameters) or have 0 columns");
   const double dp_dlogit = p * (1.0 - p);
 
   arma::sp_mat Lc(L); Lc.sync();
@@ -525,7 +614,7 @@ Rcpp::List ctmc_n2ll_grad_arma(
       if (abort) break;
       try {
         out(s) = segment_g(i0, i1, Lcp, Lri, Lv, dt, delta, p, dp_dlogit, ip, ns, P, np, alpha_0,
-                           eq_prec, prune, drop, ctl, zo[s], wss[tid], Gp + s * np);
+                           eq_prec, prune, drop, ctl, zo[s], wss[tid], Gp + s * np, ddelta);
         if (!std::isfinite(out(s))) for (int k = 0; k < np; ++k) Gp[s * np + k] = 0.0;
       } catch (...) {
 #ifdef _OPENMP
@@ -545,3 +634,32 @@ Rcpp::List ctmc_n2ll_grad_arma(
                             Rcpp::Named("alpha_0") = alpha_0);
 }
 
+
+//' Rate matrix and pi dQ/dtheta (internal)
+//' @description Returns the rate matrix Q (as built by load_Q()/load_Q_sde(), including clip)
+//'   and B, an ns x npq matrix whose column k is (pi dQ/dtheta_k)^T, used for the derivative of
+//'   the stationary distribution (dpi Q = -pi dQ, sum(dpi) = 0).
+//' @keywords internal
+// [[Rcpp::export]]
+Rcpp::List ctmc_Q_grad_arma(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m,
+                            const arma::mat& X_q_r, const arma::mat& X_q_m, const arma::vec& hij, int ns,
+                            int link_r, double a_r, double l_r, double u_r, int link_m, double a_m,
+                            int form, double k_sde, bool norm, double clip, const arma::vec& pi,
+                            double sde_a = 0.0)
+{
+  PMat P;
+  build_Q_grad(P, from_to, Xb_q_r, Xb_q_m, X_q_r, X_q_m, hij, ns, link_r, a_r, l_r, u_r,
+               link_m, a_m, form, k_sde, norm, clip, sde_a);
+  const int npq = P.npq;
+  const arma::uword nnz = P.v.size();
+  arma::umat loc(2, nnz); arma::vec val(nnz);
+  arma::mat B(ns, npq, arma::fill::zeros);
+  if (pi.n_elem != 0 && (int)pi.n_elem != ns) Rcpp::stop("pi must have length ns");
+  for (int i = 0; i < ns; ++i)
+    for (arma::uword q = P.rp[i]; q < P.rp[i + 1]; ++q) {
+      loc(0, q) = i; loc(1, q) = P.ci[q]; val(q) = P.v[q];
+      if (pi.n_elem) for (int k = 0; k < npq; ++k) B(P.ci[q], k) += pi[i] * P.dv[q * npq + k];
+    }
+  arma::sp_mat Q(true, loc, val, ns, ns, true, true);   // add duplicates, sort
+  return Rcpp::List::create(Rcpp::Named("Q") = Q, Rcpp::Named("B") = B);
+}

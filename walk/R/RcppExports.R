@@ -17,24 +17,33 @@ omp_info <- function() {
 #' @return list(n2ll = per-segment -2 log L, grad = n_par x n_seg matrix of derivatives,
 #'   zero_obs, alpha_0)
 #' @keywords internal
-ctmc_n2ll_grad_arma <- function(L, dt, seg_start, ns, from_to, Xb_q_r, Xb_q_m, X_q_r, X_q_m, p, has_p, delta, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, norm, nthreads = 1L, prune = 0.0, drop = 0.0) {
-    .Call(`_walk_ctmc_n2ll_grad_arma`, L, dt, seg_start, ns, from_to, Xb_q_r, Xb_q_m, X_q_r, X_q_m, p, has_p, delta, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, norm, nthreads, prune, drop)
+ctmc_n2ll_grad_arma <- function(L, dt, seg_start, ns, from_to, Xb_q_r, Xb_q_m, X_q_r, X_q_m, p, has_p, delta, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, norm, hij, form, k_sde, clip, ddelta, nthreads = 1L, prune = 0.0, drop = 0.0, sde_a = 0.0) {
+    .Call(`_walk_ctmc_n2ll_grad_arma`, L, dt, seg_start, ns, from_to, Xb_q_r, Xb_q_m, X_q_r, X_q_m, p, has_p, delta, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, norm, hij, form, k_sde, clip, ddelta, nthreads, prune, drop, sde_a)
 }
 
-ctmc_n2ll_arma <- function(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip) {
-    .Call(`_walk_ctmc_n2ll_arma`, L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip)
+#' Rate matrix and pi dQ/dtheta (internal)
+#' @description Returns the rate matrix Q (as built by load_Q()/load_Q_sde(), including clip)
+#'   and B, an ns x npq matrix whose column k is (pi dQ/dtheta_k)^T, used for the derivative of
+#'   the stationary distribution (dpi Q = -pi dQ, sum(dpi) = 0).
+#' @keywords internal
+ctmc_Q_grad_arma <- function(from_to, Xb_q_r, Xb_q_m, X_q_r, X_q_m, hij, ns, link_r, a_r, l_r, u_r, link_m, a_m, form, k_sde, norm, clip, pi, sde_a = 0.0) {
+    .Call(`_walk_ctmc_Q_grad_arma`, from_to, Xb_q_r, Xb_q_m, X_q_r, X_q_m, hij, ns, link_r, a_r, l_r, u_r, link_m, a_m, form, k_sde, norm, clip, pi, sde_a)
+}
+
+ctmc_n2ll_arma <- function(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip, sde_a = 0.0) {
+    .Call(`_walk_ctmc_n2ll_arma`, L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip, sde_a)
 }
 
 #' Joint multi-segment CTMC -2 log-likelihood (internal)
 #' @return list(n2ll = per-segment -2 log L, zero_obs = 1-based index of the first
 #'   observation with zero predictive probability in each segment where that happens)
 #' @keywords internal
-ctmc_n2ll_joint_arma <- function(L, dt, seg_start, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip, nthreads = 1L, prune = 0.0, drop = 0.0) {
-    .Call(`_walk_ctmc_n2ll_joint_arma`, L, dt, seg_start, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip, nthreads, prune, drop)
+ctmc_n2ll_joint_arma <- function(L, dt, seg_start, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip, nthreads = 1L, prune = 0.0, drop = 0.0, sde_a = 0.0) {
+    .Call(`_walk_ctmc_n2ll_joint_arma`, L, dt, seg_start, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip, nthreads, prune, drop, sde_a)
 }
 
-ctmc_predict_arma <- function(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip) {
-    .Call(`_walk_ctmc_predict_arma`, L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip)
+ctmc_predict_arma <- function(L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip, sde_a = 0.0) {
+    .Call(`_walk_ctmc_predict_arma`, L, dt, ns, from_to, Xb_q_r, Xb_q_m, p, delta, hij, eq_prec, trunc_tol, link_r, a_r, l_r, u_r, link_m, a_m, form, k, norm, clip, sde_a)
 }
 
 sp_mat_div <- function(X, Y) {
@@ -53,6 +62,10 @@ soft_plus <- function(x, a) {
     .Call(`_walk_soft_plus`, x, a)
 }
 
+sde_drift <- function(x, sde_a) {
+    .Call(`_walk_sde_drift`, x, sde_a)
+}
+
 hard_plus <- function(x) {
     .Call(`_walk_hard_plus`, x)
 }
@@ -65,7 +78,7 @@ load_Q <- function(from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, l_r, u_r, link_m, a
     .Call(`_walk_load_Q`, from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, l_r, u_r, link_m, a_m, norm, clip)
 }
 
-load_Q_sde <- function(from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip) {
-    .Call(`_walk_load_Q_sde`, from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip)
+load_Q_sde <- function(from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip, sde_a) {
+    .Call(`_walk_load_Q_sde`, from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip, sde_a)
 }
 

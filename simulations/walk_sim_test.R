@@ -54,6 +54,25 @@ walkResVec <- c(1,2,5,8) # cell resolution for walk model fitting (should be >= 
 
 nthreads <- nbAnimals
 
+#' -----------------------------------------------------------------------------
+#' walk model form (requires walk with walk_logistic_form.patch applied)
+#' -----------------------------------------------------------------------------
+#' "mult"     : q_ij = exp(b0) * exp((x_j - x_i)'b)            UD ~ exp(2 x'b)        => beta = 2 b
+#' "sde"      : q_ij = exp(b0)/(k h^2) + f(mu_ij)/((k/2) h),    mu_ij = b'(x_j - x_i)/h (Langevin drift along the edge)
+#'                                                              UD ~ exp(2 x'b/exp(b0)) => beta = 2 b / exp(b0)
+#' "logistic" : q_ij = lambda * logistic((x_j - x_i)'b)         UD ~ exp(x'b)/lambda    => beta = b
+#'              lambda = U*logistic(a0) (link "logit", bounded by U) or exp(a0) (link "log")
+#' 'beta' columns of parMat are on the Langevin (UD) scale for every form, so they are directly
+#' comparable with the true beta and with parMatLang; the raw walk estimates are kept in parMatRaw.
+walkForm <- "mult"          # one of "mult", "sde", "logistic"
+walkForm <- match.arg(walkForm, c("mult", "sde", "logistic"))
+sdeA <- Inf                 # "sde" only: drift transform; Inf = hard plus max(0,x) (default), finite = soft plus (see ?ctmc_control)
+logisticLink <- "logit"     # "logistic" only: residency link, "logit" (rate bounded by U) or "log" (unbounded)
+logisticUmult <- 10         # "logistic" + "logit" only: U = logisticUmult * (2 D / h^2), where 2 D / h^2 is the value of
+# lambda implied by the true diffusion D (see below). U is fixed, not estimated; with real data
+# set it from an upper bound on the diffusion rate instead.
+walkClip <- 0               # optional cap on the total leaving rate of a cell (0 = none), see ?ctmc_control
+
 ## coastline placement (see simLand.R): the coast passes coastDist*udSD from the UD centre (origin)
 source("simulations/simLand.R")
 coastDist <- c(0.3, 1)   # in units of the d2c UD scale sqrt(sca / (2 |beta_d2c|))
@@ -140,8 +159,11 @@ for(ind in 1:length(sigmaList)){
           
           simLang <- subDatWalk <- spatialCovs <- spatialCovsWalk <- langFit <- walkFit <- vector("list",nsims)
           
-          parMat <- matrix(NA,nrow=nsims,ncov+4+includeBarrier)
-          colnames(parMat) <- c(paste0("beta",1:(ncov+1+includeBarrier)),"BA","SchoenerD","RMSE_log")
+          parMat <- matrix(NA,nrow=nsims,ncov+5+includeBarrier)
+          colnames(parMat) <- c(paste0("beta",1:(ncov+1+includeBarrier)),"sigma_eq","BA","SchoenerD","RMSE_log")
+          # raw walk estimates (beta_q_r, beta_q_m) on the scale of the walk model
+          parMatRaw <- matrix(NA,nrow=nsims,ncov+2+includeBarrier)
+          colnames(parMatRaw) <- c("beta_q_r",paste0("beta_q_m",1:(ncov+1+includeBarrier)))
           
           parMatLang <- matrix(NA,nrow=nsims,ncov+5+1+includeBarrier)
           colnames(parMatLang) <- c(paste0("beta",1:(ncov+1+includeBarrier)),"sigma","gamma","BA","SchoenerD","RMSE_log")
@@ -161,8 +183,15 @@ for(ind in 1:length(sigmaList)){
             smaj.sd = smaj.sd,
             sca = sca,
             langRes = langRes,
-            walkRes = walkRes
+            walkRes = walkRes,
+            walkForm = walkForm
           )
+          if(walkForm == "sde" && is.finite(sdeA)) cur_params$sdeA <- sdeA
+          if(walkForm == "logistic"){
+            cur_params$logisticLink <- logisticLink
+            if(logisticLink == "logit") cur_params$logisticUmult <- logisticUmult
+          }
+          if(walkClip > 0) cur_params$walkClip <- walkClip
           
           # Collapse all parameters into key=value pairs separated by underscores
           param_tags <- paste(names(cur_params), cur_params, sep = "=", collapse = "_")
@@ -353,27 +382,55 @@ for(ind in 1:length(sigmaList)){
                   next
                 }
                 
-                # Create differences
-                walk_data$q_m$d_cov1 <-  walk_data$q_m$cov1 - walk_data$q_m$from_cov1
-                walk_data$q_m$d_cov2 <-  walk_data$q_m$cov2 - walk_data$q_m$from_cov2
-                walk_data$q_m$d_cov3 <-  walk_data$q_m$cov3 - walk_data$q_m$from_cov3
-                walk_data$q_m$d_d2c <-  walk_data$q_m$d2c - walk_data$q_m$from_d2c
+                # Covariates of the potential (beta order: cov1..cov3, d2c[, d2coast])
+                potCovs <- c("cov1","cov2","cov3","d2c")
+                if(includeBarrier) potCovs <- c(potCovs, "d2coast")
                 
-                form <- ~d_cov1 + d_cov2 + d_cov3 + d_d2c
+                # Long-run diffusion coefficient D of the simulated Langevin process (per axis, position units^2 / time):
+                # overdamped D = sigma^2/2; underdamped D = sigma^2/gamma. Used only for starting values
+                # (and for U of the bounded logistic form).
+                D_true <- if(model == "underdamped") sigma^2/gamma else sigma^2/2
+                h_walk <- walkRes
                 
-                if(includeBarrier){
-                  walk_data$q_m$d_d2coast <-  walk_data$q_m$d2coast - walk_data$q_m$from_d2coast
-                  form <- ~d_cov1 + d_cov2 + d_cov3 + d_d2c + d_d2coast
+                if(walkForm == "mult"){
+                  # differences x_j - x_i on each edge
+                  for(v in potCovs) walk_data$q_m[[paste0("d_", v)]] <- walk_data$q_m[[v]] - walk_data$q_m[[paste0("from_", v)]]
+                  qmForm <- reformulate(paste0("d_", potCovs))
+                  model_parameters <- ctmc_control(
+                    q_r = ctmc_model(form = ~ 1, link="log"), 
+                    q_m = ctmc_model(form= qmForm, link="log"),
+                    norm=FALSE, delta="uniform", form="mult", clip=walkClip)
+                  startWalk <- list(beta_q_r=sigma/2)
+                } else if(walkForm == "sde"){
+                  # directional gradient of each covariate along the edge, (x_j - x_i)/h
+                  # (q_m formula must have no intercept; q_r must be ~1)
+                  for(v in potCovs) walk_data$q_m[[paste0("g_", v)]] <- (walk_data$q_m[[v]] - walk_data$q_m[[paste0("from_", v)]])/walk_data$q_m$h
+                  qmForm <- reformulate(c(paste0("g_", potCovs), "-1"))
+                  model_parameters <- ctmc_control(
+                    q_r = ctmc_model(form = ~ 1, link="log"),        # exp(beta_q_r) = 2 D (= sigma^2 overdamped)
+                    q_m = ctmc_model(form= qmForm),                  # beta_q_m = D * beta
+                    delta="uniform", form="sde", sde_a=sdeA, clip=walkClip)
+                  startWalk <- list(beta_q_r=log(2*D_true))
+                } else {
+                  # cell covariates (columns of walk_data$q_r); the edge design x_j - x_i is built by fit_ctmc
+                  qmForm <- reformulate(potCovs)
+                  lam0 <- 2*D_true/h_walk^2    # lambda giving diffusion D: each of the 4 rook rates is lambda/2 at b = 0
+                  if(logisticLink == "logit"){
+                    U <- logisticUmult*lam0
+                    q_r_mod <- ctmc_model(form = ~ 1, link="logit", U=U)
+                    startWalk <- list(beta_q_r=qlogis(lam0/U))
+                  } else {
+                    q_r_mod <- ctmc_model(form = ~ 1, link="log")
+                    startWalk <- list(beta_q_r=log(lam0))
+                  }
+                  model_parameters <- ctmc_control(
+                    q_r = q_r_mod,
+                    q_m = ctmc_model(form= qmForm),                  # link is set to logistic by form="logistic"
+                    delta="uniform", form="logistic", clip=walkClip)
                 }
                 
-                model_parameters <- ctmc_control(
-                  q_r = ctmc_model(form = ~ 1, link="log"), 
-                  q_m = ctmc_model(form= form, link="log"),
-                  # q_m = ctmc_model(form= ~1, link="log"),
-                  norm=FALSE, delta="uniform")
-                
                 walkFit[[isim]] <- tryCatch(suppressMessages(fit_ctmc(walk_data, model_parameters = model_parameters, nthreads = nthreads,
-                                                                      start=list(beta_q_r=sigma/2)#,control=list(trace=1)
+                                                                      start=startWalk#,control=list(trace=1)
                 )),error=function(e) e)
                 # beta <- c(2*walkFit[[isim]]$results$q_m$est)
                 
@@ -383,7 +440,21 @@ for(ind in 1:length(sigmaList)){
                   
                   if(!inherits(ud,"error")){
                     # Get parameter estimates
+                    beta_q_r <- walkFit[[isim]]$results$q_r$est
                     beta_q_m <- walkFit[[isim]]$results$q_m$est
+                    # convert to the Langevin scale: UD ~ exp(x'beta); sigma_eq = sqrt(2 D_hat) is the
+                    # overdamped-equivalent sigma implied by the fitted diffusion rate
+                    if(walkForm == "mult"){
+                      beta_walk <- 2*beta_q_m
+                      sigma_eq <- h_walk*sqrt(2*exp(beta_q_r))
+                    } else if(walkForm == "sde"){
+                      beta_walk <- 2*beta_q_m/exp(beta_q_r)
+                      sigma_eq <- sqrt(exp(beta_q_r))
+                    } else {
+                      lam_hat <- if(logisticLink == "logit") U*plogis(beta_q_r) else exp(beta_q_r)
+                      beta_walk <- beta_q_m
+                      sigma_eq <- h_walk*sqrt(lam_hat)
+                    }
                     # Calculate preference function from parameters
                     #ud$pref <- beta_q_m[1]*walk_data$q_r$cov1 + beta_q_m[2]*walk_data$q_r$cov2 + beta_q_m[3]*walk_data$q_r$cov3 +  beta_q_m[4]*walk_data$q_r$d2c
                     #if(includeBarrier) ud$pref <- ud$pref + beta_q_m[4]*walk_data$q_r$d2c
@@ -439,7 +510,7 @@ for(ind in 1:length(sigmaList)){
                           na.value = "transparent",
                           limits = shared_limits 
                         ) + ggplot2::coord_equal() +
-                        labs(subtitle="walk UD", title=paste("Simulation",isim)) + 
+                        labs(subtitle=paste0("walk UD (", walkForm, ")"), title=paste("Simulation",isim)) + 
                         ggplot2::theme_minimal() +
                         ggplot2::theme(
                           axis.title.x = ggplot2::element_blank(),
@@ -482,7 +553,9 @@ for(ind in 1:length(sigmaList)){
                       
                       print(p1 + p2 + p3 + patchwork::plot_layout(ncol = 3, nrow = 1, guides = "collect"))
                       
-                      parMat[isim,1:(ncov+1+includeBarrier)] <- beta_q_m
+                      parMat[isim,1:(ncov+1+includeBarrier)] <- beta_walk
+                      parMat[isim,"sigma_eq"] <- sigma_eq
+                      parMatRaw[isim,] <- c(beta_q_r, beta_q_m)
                       parMat[isim,"BA"] <- walkMetrics["BA"] 
                       parMat[isim,"SchoenerD"] <- walkMetrics["SchoenerD"] 
                       parMat[isim,"RMSE_log"] <- walkMetrics["RMSE_log"] 
@@ -513,11 +586,11 @@ for(ind in 1:length(sigmaList)){
               }
             }
             
-            save(parMat, parMatLang, file = fileName)
+            save(parMat, parMatRaw, parMatLang, cur_params, file = fileName)
           } else {
             load(fileName)
-            print(apply(parMat,2,mean))
-            print(apply(parMatLang,2,mean))
+            print(apply(parMat,2,mean,na.rm=TRUE))
+            print(apply(parMatLang,2,mean,na.rm=TRUE))
           }
         }
       }

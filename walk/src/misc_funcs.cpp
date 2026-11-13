@@ -50,6 +50,21 @@ arma::vec soft_plus(const arma::vec& x, double a){
   return out;
 } 
 
+// Drift transform of the "sde" form. sde_a <= 0 (or not finite): hard plus max(0, x).
+// sde_a > 0: soft plus max(0, x) + log1p(exp(-|a x|))/a. Both satisfy f(x) - f(-x) = x, so the net
+// drift between two neighbouring cells is the same; the soft plus adds f(x) + f(-x) - |x| <= 2 log(2)/a
+// of symmetric (diffusion-like) rate on each edge pair. Unlike soft_plus(), any a > 0 is allowed.
+// [[Rcpp::export]]
+arma::vec sde_drift(const arma::vec& x, double sde_a){
+  arma::vec out(x);
+  const bool soft = (sde_a > 0.0) && std::isfinite(sde_a);
+  for(arma::uword i=0; i<x.n_elem; i++){
+    out(i) = std::max(0.0, x(i));
+    if(soft) out(i) += std::log1p(std::exp(-std::abs(sde_a*x(i))))/sde_a;
+  }
+  return out;
+}
+
 // [[Rcpp::export]]
 arma::vec hard_plus(const arma::vec& x){
   arma::vec out(x);
@@ -101,6 +116,13 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
   }
   if(link_m==1){
     Qm_vals = soft_plus(Xb_q_m, a_m);
+  } else if(link_m==3){
+    // logistic: m_ij = 1/(1 + exp(-x)) (form = "logistic"; see ctmc_control())
+    Qm_vals = Xb_q_m;
+    for(arma::uword e=0; e<Qm_vals.n_elem; e++){
+      double x = Xb_q_m(e);
+      Qm_vals(e) = (x >= 0.0) ? 1.0/(1.0 + std::exp(-x)) : std::exp(x)/(1.0 + std::exp(x));
+    }
   } else{
     Qm_vals = trunc_exp(Xb_q_m);
   }
@@ -150,7 +172,7 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
 
 // [[Rcpp::export]]
 arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, const arma::vec& hij,
-                        int ns, double k, double clip) {
+                        int ns, double k, double clip, double sde_a) {
   
   // make D
   arma::vec aij(from_to.n_cols, fill::ones);
@@ -162,7 +184,9 @@ arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, cons
   D = sp_mat_div(D, k*h%h);
   D.diag() -= 1*sum(D,1);
   // make Z
-  arma::sp_mat Z(from_to, hard_plus(Xb_q_m), ns, ns);
+  // drift: max(0, x) (sde_a <= 0 or not finite, the default) or the soft-plus
+  // max(0, x) + log(1 + exp(-a|x|))/a (sde_a = a > 0); see sde_drift()
+  arma::sp_mat Z(from_to, sde_drift(Xb_q_m, sde_a), ns, ns);
   Z = sp_mat_div(Z, (k/2)*h);
   Z.diag() -= 1*sum(Z,1);
   

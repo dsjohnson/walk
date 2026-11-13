@@ -25,9 +25,15 @@ ctmc_n2ll_grad_arma(
   link_m,
   a_m,
   norm,
+  hij,
+  form,
+  k_sde,
+  clip,
+  ddelta,
   nthreads = 1L,
   prune = 0,
-  drop = 0
+  drop = 0,
+  sde_a = 0
 )
 }
 \value{

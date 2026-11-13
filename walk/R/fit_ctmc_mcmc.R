@@ -47,7 +47,7 @@
 #'     if(length(delta) != nrow(walk_data$q_r)) stop("The length of 'delta' vector is not equal to the number of cells.")
 #'     delta <- delta/sum(delta)
 #'   }
-#'   if(delta=="uniform"){
+#'   if(is.character(delta) && delta=="uniform"){
 #'     delta <- rep(1,nrow(walk_data$q_r))
 #'     delta <- delta/sum(delta)
 #'   }
@@ -68,7 +68,7 @@
 #'   
 #'   form <- model_parameters$form
 #'   if(!is.null(form)){
-#'     if(!form%in%c("mult","add","sde")) stop("The 'form' object in must be either 'mult','add', or 'sde'.")
+#'     if(!form%in%c("mult","sde")) stop("The 'form' object must be either 'mult' or 'sde'.")
 #'   } else{
 #'     form<- "mult"
 #'   }
@@ -103,7 +103,7 @@
 #'   
 #'   if(a_r<1 | a_m<1) stop("The 'a' parameter for the 'soft_plus' and 'sde' link functions must be >1.")
 #'   
-#'   if(form %in% c("mult","add")){
+#'   if(form == "mult"){
 #'     k <- 0
 #'   } else {
 #'     k <- if(attr(walk_data$q_m, "directions")=="rook"){

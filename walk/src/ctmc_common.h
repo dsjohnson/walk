@@ -6,15 +6,17 @@
 
 #include "walk_types.h"
 
-// Rate matrix for either model form (1 = "mult", 2 = "sde").
+// Rate matrix for either model form (1 = "mult", 2 = "sde"). The R form "logistic" is form 1 with
+// link_m = 3 (logistic movement link) and norm = false. sde_a: drift transform of "sde"
+// (0 = hard plus, the default; a > 0 = soft plus with scale a).
 inline arma::sp_mat build_Q(const arma::umat& from_to, const arma::vec& Xb_q_r,
                             const arma::vec& Xb_q_m, const arma::vec& hij, int ns,
                             int link_r, double a_r, double l_r, double u_r,
                             int link_m, double a_m, int form, double k, bool norm,
-                            double clip) {
+                            double clip, double sde_a = 0.0) {
   if (form == 1)
     return load_Q(from_to, Xb_q_r, Xb_q_m, ns, link_r, a_r, l_r, u_r, link_m, a_m, norm, clip);
-  return load_Q_sde(from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip);
+  return load_Q_sde(from_to, Xb_q_r, Xb_q_m, hij, ns, k, clip, sde_a);
 }
 
 // Observation update with the outlier mixture:  v <- v % ((1-p) L_i) + (p/ns) v.

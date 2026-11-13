@@ -31,6 +31,7 @@ arma::sp_mat load_Q(const arma::umat& from_to, const arma::vec& Xb_q_r, const ar
                     int link_m = 1, double a_m = 1.0, bool norm = true, double clip = 0.0);
 
 arma::sp_mat load_Q_sde(const arma::umat& from_to, const arma::vec& Xb_q_r, const arma::vec& Xb_q_m, 
-                        const arma::vec& hij, int ns, double k, double clip = 0.0);
+                        const arma::vec& hij, int ns, double k, double clip = 0.0, double sde_a = 0.0);
+arma::vec sde_drift(const arma::vec& x, double sde_a);
 
 #endif // WALK_TYPES_H

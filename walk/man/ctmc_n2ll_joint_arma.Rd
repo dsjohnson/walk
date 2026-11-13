@@ -28,7 +28,8 @@ ctmc_n2ll_joint_arma(
   clip,
   nthreads = 1L,
   prune = 0,
-  drop = 0
+  drop = 0,
+  sde_a = 0
 )
 }
 \value{

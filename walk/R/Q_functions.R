@@ -27,11 +27,11 @@ get_Q <- function(fit, clip=TRUE, sparse=TRUE){
   Xb_q_m <- dl$X_q_m %*% beta_q_m
   from_to <- t(cbind(dl$from, dl$to))
   clip <- as.numeric(clip*dl$clip)
-  if(dl$form=="mult"){
+  if(dl$form %in% c("mult", "logistic")){
     Q <- load_Q(from_to, Xb_q_r, Xb_q_m, dl$ns, 
-                     link_r = which(dl$link_r==c("soft_plus", "log","logit")), 
+                     link_r = link_r_code(dl), 
                      a_r = dl$a_r, l_r=dl$l_r, u_r=dl$u_r,
-                     link_m = which(dl$link_m==c("soft_plus", "log")), 
+                     link_m = link_m_code(dl), 
                      a_m=dl$a_m, dl$norm, clip)
   } 
     # else if(dl$form=="add"){
@@ -41,7 +41,7 @@ get_Q <- function(fit, clip=TRUE, sparse=TRUE){
   #                   a_r = dl$a_r, a_m=dl$a_m, dl$clip) 
   # } 
     else{
-    Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$hij, dl$ns, dl$k, clip) 
+    Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$hij, dl$ns, dl$k, clip, sde_a_of(dl))
   }
   if(!sparse) Q <- as.matrix(Q)
   return(Q)
@@ -52,15 +52,23 @@ get_Q <- function(fit, clip=TRUE, sparse=TRUE){
 #' @param hpd A vector of probabilities. Will return columns with highest probability area for each specified probability. E.g., 
 #' \code{hpd=c(0.5, 0.95)} will return 2 extra columns with 50 and 95% HPD densities. 
 #' @param clip If truncation was used for the rate matrix during model fitting, should it be used here?
-#' @param method Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}.
+#' @param method Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}. For
+#' `form = "logistic"` (with symmetric neighbourhoods) the default is the exact closed form
+#' (\code{"closed"}, see \code{\link{lim_ud_logistic}}); \code{"lu"} or \code{"arpack"} can still be requested.
 #' @param ... Extra arguments to pass to \code{\link[rARPACK]{eigs}}
 #' @author Devin S. Johnson
 #' @export
 #' @importFrom Matrix t lu expand Matrix
 #' @importFrom stats median
 #' @importFrom rARPACK eigs
-get_lim_ud <- function(fit=NULL, hpd=NULL, clip=TRUE, method="lu",...){
+get_lim_ud <- function(fit=NULL, hpd=NULL, clip=TRUE, method=NULL,...){
   
+  if(is.null(method)) method <- if(ud_closed_ok(fit$data_list)) "closed" else "lu"
+  if(method=="closed"){
+    if(!ud_closed_ok(fit$data_list)) stop("method = 'closed' needs form = 'logistic' with symmetric neighbourhoods.")
+    ud <- lim_ud_logistic(fit$par, fit$data_list, clip = clip)$ud
+    return(lim_ud_finish(ud, fit, hpd))
+  }
   clip <- as.numeric(clip*fit$data_list$clip)
   Q <- get_Q(fit)
   if(!check_irreducibility(Q)$irreducible){
@@ -101,6 +109,12 @@ get_lim_ud <- function(fit=NULL, hpd=NULL, clip=TRUE, method="lu",...){
   ud <- ud/sum(ud)
   ud <- pmax(0,ud)
   ud <- ud/sum(ud)
+  lim_ud_finish(ud, fit, hpd)
+}
+
+# attach the cell map and the HPD columns (shared by all methods of get_lim_ud())
+#' @noRd
+lim_ud_finish <- function(ud, fit, hpd){
   ud <- cbind(fit$data_list$cell_map, ud)
   if(!is.null(hpd)){
     hpd <- round(hpd*100,0)

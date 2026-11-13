@@ -15,12 +15,15 @@ ctmc_control(
   delta = "uniform",
   form = "mult",
   norm = TRUE,
-  clip = 0
+  clip = 0,
+  sde_a = Inf
 )
 }
 \arguments{
-\item{form}{The form of the rate matrix entries. Can be one of: \code{"mult"} for residency times movement, i.e., q_\{ij\} = q_r(i) * pi_m(i,j), \code{"add"} for a model of
-the form q_\{ij\} = q_r(i) + pi_m(i,j), and \code{"sde"} for a Langevin diffusion approximation. The \code{"sde"} is very similar to the additive model.}
+\item{form}{For \code{ctmc_model}, the model formula for the residency or movement component. For \code{ctmc_control}, the form of the rate matrix entries: \code{"mult"} (default) for residency times movement,
+i.e., q_\{ij\} = q_r(i) * pi_m(i,j), \code{"sde"} for a Langevin diffusion approximation (requires \code{q_r} form \code{~1}; sets \code{norm = FALSE}),
+or \code{"logistic"} for q_\{ij\} = lambda_i * logistic((x_j - x_i)'b), which has a closed-form limiting distribution (see Details; sets \code{norm = FALSE}
+and the movement link to logistic). The exact likelihood gradient used by \code{\link{fit_ctmc}} is available for all forms.}
 
 \item{link}{A link funtion for the residency or movement model. One of \code{"soft_plus"} or \code{"log"}.}
 
@@ -45,9 +48,50 @@ stationary distribution implied by the parameters, or a numeric vector the same 
 \item{norm}{Should the movement portion be adjusted to sum to 1. This is the parameterization suggested by Hewitt et al. (2023).}
 
 \item{clip}{Positive value for the maximum movement rate for all cells. All cells with modeled total movement rates above this value will be truncated to \code{clip}.}
+
+\item{sde_a}{Drift transform for \code{form = "sde"} (ignored otherwise). \code{Inf} (default) uses the hard plus
+\code{max(0, x)} of the original model. A finite \code{sde_a > 0} uses the soft plus
+\verb{f(x) = max(0, x) + log(1 + exp(-sde_a |x|))/sde_a}, which makes the likelihood smooth in \code{beta_q_m}.
+See Details.}
 }
 \description{
 Define specifics for model structure and fitting control
+}
+\details{
+\strong{Soft-plus drift for the SDE form.} With \code{form = "sde"} the rate from cell i to neighbour j is
+\verb{q_ij = exp(beta_q_r)/(k h^2) + f(mu_ij)/((k/2) h)}, where \code{mu_ij} is the linear predictor of the
+movement model (the drift along the edge) and \code{h} the edge length. Both transforms satisfy
+\code{f(x) - f(-x) = x}, so the net drift between two cells, and hence the meaning of \code{beta_q_m}
+(coefficients of the gradient of the log potential), is the same. The soft plus adds
+\verb{f(mu) + f(-mu) - |mu|} (between 0 and \verb{2 log(2)/sde_a}, largest where \code{mu} is near 0) of symmetric rate
+to each pair of edges, i.e. extra diffusion that is not part of the Langevin model. The diffusion
+parameter \code{exp(beta_q_r)} is then biased downward to compensate. Relative to the diffusion of the
+model, the extra diffusion on an edge is \verb{h (f(mu) + f(-mu) - |mu|) / exp(beta_q_r)}, at most
+\verb{2 log(2) h / (sde_a exp(beta_q_r))}. \code{sde_a} has units of 1/(units of \code{mu}), so a value that is large
+enough for one landscape need not be for another; check a fit with \code{\link{sde_drift_check}}
+(e.g. require the median relative extra diffusion to be < 0.01). The hard plus (default) gives a likelihood that is continuous but has
+a kink wherever an edge drift changes sign; the exact gradient of \code{\link{fit_ctmc}} handles this,
+so the soft plus is mainly useful when optimisation stalls at a kink.
+
+\strong{The "logistic" form.} With \code{form = "logistic"} the rate from cell i to neighbour j is
+\verb{q_ij = lambda_i * logistic((x_j - x_i)'b)}, where \code{lambda_i} is the residency model (\code{q_r}, with
+coefficients \code{beta_q_r}) and \verb{x_i'b} is a cell-level potential: the \code{q_m} formula is evaluated on the
+cell data (\code{walk_data$q_r}, so it uses cell covariates, not gradient/edge covariates; the intercept drops
+out) and the design of edge i -> j is \code{x_j - x_i}. Because \code{logistic(d)/logistic(-d) = exp(d)}, the chain
+is reversible (when every neighbour relation is symmetric, which is checked) and its limiting
+(utilization) distribution is
+\deqn{u_i \propto \exp(x_i'b) / \lambda_i .}
+With the bounded residency link \code{q_r = ctmc_model(~ z, link = "logit", U = U)} (L = 0), i.e.
+\verb{lambda_i = U logistic(z_i'a)}, this is \verb{u_i propto exp(x_i'b) (1 + exp(-z_i'a))}: \code{U} is a hard upper
+bound on the rate of leaving any cell (each edge rate is below \code{lambda_i}, so the total leaving rate is below
+\code{U} times the number of neighbours), \code{b} has the usual resource-selection interpretation
+(\verb{exp(x'b)} when \code{lambda} is constant, e.g. \code{q_r} form \code{~1}), and a positive coefficient in \code{a} means faster
+movement out of (shorter residency in), and hence lower use of, cells with large \code{z}. Compared with
+\code{clip}, which caps rates by a kink, the bound here is smooth. The closed form is used by
+\code{\link{get_lim_ud}} and for \code{delta = "stationary"} (with its exact derivative), see
+\code{\link{lim_ud_logistic}}. With \code{clip > 0} (not applied with the logit residency link, as for
+\code{"mult"}) a clipped row keeps the same structure with \code{lambda_i} replaced by \verb{clip / sum_j logistic(.)},
+so the closed form still holds.
 }
 \references{
 Hewitt, J., Gelfand, A. E., & Schick, R. S. (2023). Time-discretization approximation enriches continuous-time discrete-space models for animal movement. The Annals of Applied Statistics, 17:740-760.

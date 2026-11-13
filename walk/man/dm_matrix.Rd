@@ -4,12 +4,15 @@
 \alias{dm_matrix}
 \alias{dm_q_m}
 \alias{dm_q_r}
+\alias{dm_q_cell}
 \title{Create sparse representations of design matrices for
 movement and resight models}
 \usage{
 dm_q_m(formula, ddl)
 
 dm_q_r(formula, ddl)
+
+dm_q_cell(formula, ddl)
 }
 \arguments{
 \item{formula}{An \code{R} formula object for the paramter vector.}
@@ -22,4 +25,8 @@ movement and resight models
 }
 \details{
 This function is not designed for end-users but is exported for posterity.
+
+\code{dm_q_cell} (used by \code{form = "logistic"}) evaluates the movement formula on the cell data
+(\code{ddl$q_r}), giving the cell-level potential covariates \code{x_i}; the intercept and constant columns
+are removed (they cancel in the differences \code{x_j - x_i}).
 }

@@ -26,11 +26,12 @@ arma::mat ctmc_predict_arma(
     int form,
     double k,
     bool norm,
-    double clip)
+    double clip,
+    double sde_a = 0.0)
 {
   int N = dt.size();
   arma::sp_mat Q = build_Q(from_to, Xb_q_r, Xb_q_m, hij, ns, link_r, a_r, l_r, u_r,
-                           link_m, a_m, form, k, norm, clip);
+                           link_m, a_m, form, k, norm, clip, sde_a);
   
   // P = I + Q/alpha_0 for forward (Q) and backward (Q^T) passes, built once.
   arma::sp_mat Pf, Pb;

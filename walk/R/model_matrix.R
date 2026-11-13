@@ -55,3 +55,17 @@ dm_q_r <- function(formula, ddl){
   # return(list(X_q = uX, idx_q=lookup, off_q=offset))
   return(X)
 }
+
+#' @rdname dm_matrix
+#' @details `dm_q_cell` (used by `form = "logistic"`) evaluates the movement formula on the cell data
+#' (`ddl$q_r`), giving the cell-level potential covariates `x_i`; the intercept and constant columns
+#' are removed (they cancel in the differences `x_j - x_i`).
+#' @export
+dm_q_cell <- function(formula, ddl){
+  X <- tryCatch(model.matrix(formula, ddl$q_r), error = function(e)
+    stop("For form = 'logistic' the 'q_m' formula must use cell covariates (columns of walk_data$q_r), ",
+         "not edge covariates such as gradients: ", conditionMessage(e), call. = FALSE))
+  if(nrow(X) != nrow(ddl$q_r)) stop("Missing values in the cell covariates of the 'q_m' formula.")
+  keep_col <- apply(X, 2, function(x) diff(range(x)) > 0)
+  X[, keep_col, drop=FALSE]
+}

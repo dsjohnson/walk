@@ -27,7 +27,8 @@ double ctmc_n2ll_arma(
     int form,
     double k,
     bool norm,
-    double clip)
+    double clip,
+    double sde_a = 0.0)
 {
   // Reference single-chain forward algorithm (dense vectors). fit_ctmc() uses
   // ctmc_n2ll_joint_arma(); this one is kept as an independent check of it.
@@ -35,7 +36,7 @@ double ctmc_n2ll_arma(
   int N = dt.size();
   arma::vec log_lik_v(N);
   arma::sp_mat Q = build_Q(from_to, Xb_q_r, Xb_q_m, hij, ns, link_r, a_r, l_r, u_r,
-                           link_m, a_m, form, k, norm, clip);
+                           link_m, a_m, form, k, norm, clip, sde_a);
   arma::sp_mat P;
   double alpha_0 = uniformization_P(Q, P);   // built once per Q
 

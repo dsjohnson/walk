@@ -24,6 +24,24 @@ zero predictive probability; the gradient of such a segment is set to 0).
 Same value as \code{\link{ctmc_n2ll_joint}}, plus the exact gradient with respect
 to \code{par}, computed in the same forward pass (forward-mode differentiation of the
 uniformization series). One call costs much less than the \code{length(par) + 1} likelihood
-evaluations of a finite-difference gradient. Available for \code{form = "mult"}, \code{clip = 0}, and a
-fixed \code{delta} (\code{"uniform"} or numeric); see \code{grad_supported()}.
+evaluations of a finite-difference gradient. Available for all model forms (\code{"mult"},
+\code{"sde"} and \code{"logistic"}), with or without \code{clip}, and for every \code{delta} (\code{"uniform"}, numeric, or
+\code{"stationary"}); see \code{grad_supported()}.
+}
+\details{
+Rate matrix: for \code{form = "mult"}, q_ij = r_i m_ij (or r_i m_ij / sum_k m_ik with \code{norm = TRUE});
+for \code{form = "sde"}, q_ij = exp(Xb_r,i) / (k h_ij^2) + max(0, Xb_m,ij) / ((k/2) h_ij); for
+\code{form = "logistic"}, q_ij = lambda_i logistic((x_j - x_i)'b). With
+\code{clip > 0}, rows whose total rate q_i exceeds \code{clip} are scaled by \code{clip / q_i}.
+
+The log-likelihood is continuous but only piecewise differentiable in two cases: the
+\code{max(0, x)} of the \code{"sde"} drift (kink where an edge's drift changes sign) and the \code{clip}
+threshold (kink where a row's total rate crosses \code{clip}). The gradient returned is that of the
+smooth piece containing \code{par}; exactly at a kink the drift derivative uses 1/2 (the average of
+the one-sided derivatives) and a row with q_i = clip is treated as unclipped.
+
+With \code{delta = "stationary"} the initial distribution pi(theta) solves pi Q = 0, sum(pi) = 1, and
+its derivative solves dpi Q = -pi dQ, sum(dpi) = 0 (one sparse solve with
+\code{length(beta_q_r) + length(beta_q_m)} right-hand sides per call). For \code{form = "logistic"} the closed
+form pi_i propto exp(x_i'b)/lambda_i and its derivative are used instead (see \code{\link{lim_ud_logistic}}).
 }

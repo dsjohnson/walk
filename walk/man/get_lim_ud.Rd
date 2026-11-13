@@ -4,7 +4,7 @@
 \alias{get_lim_ud}
 \title{Get the limiting utilization distribution of the CTMC movement process}
 \usage{
-get_lim_ud(fit = NULL, hpd = NULL, clip = TRUE, method = "lu", ...)
+get_lim_ud(fit = NULL, hpd = NULL, clip = TRUE, method = NULL, ...)
 }
 \arguments{
 \item{fit}{A fitted model object from \code{\link[walk]{fit_ctmc}}.}
@@ -14,7 +14,9 @@ get_lim_ud(fit = NULL, hpd = NULL, clip = TRUE, method = "lu", ...)
 
 \item{clip}{If truncation was used for the rate matrix during model fitting, should it be used here?}
 
-\item{method}{Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}.}
+\item{method}{Method used for eigen decomposition. One of \code{"lu"} or \code{"arpack"}. For
+\code{form = "logistic"} (with symmetric neighbourhoods) the default is the exact closed form
+(\code{"closed"}, see \code{\link{lim_ud_logistic}}); \code{"lu"} or \code{"arpack"} can still be requested.}
 
 \item{...}{Extra arguments to pass to \code{\link[rARPACK]{eigs}}}
 }

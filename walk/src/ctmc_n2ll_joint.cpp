@@ -348,7 +348,7 @@ Rcpp::List ctmc_n2ll_joint_arma(
     int link_r, double a_r, double l_r, double u_r,
     int link_m, double a_m,
     int form, double k, bool norm, double clip,
-    int nthreads = 1, double prune = 0.0, double drop = 0.0)
+    int nthreads = 1, double prune = 0.0, double drop = 0.0, double sde_a = 0.0)
 {
   arma::uword N = dt.n_elem;
   if (L.n_cols != N) Rcpp::stop("ncol(L) must equal length(dt)");
@@ -356,7 +356,7 @@ Rcpp::List ctmc_n2ll_joint_arma(
   check_seg_start(seg_start, N);
 
   arma::sp_mat Q = build_Q(from_to, Xb_q_r, Xb_q_m, hij, ns, link_r, a_r, l_r, u_r,
-                           link_m, a_m, form, k, norm, clip);
+                           link_m, a_m, form, k, norm, clip, sde_a);
   arma::sp_mat P;
   double alpha_0 = uniformization_P(Q, P);
   arma::sp_mat Pt = P.t();
