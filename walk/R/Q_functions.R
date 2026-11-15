@@ -29,18 +29,12 @@ get_Q <- function(fit, clip=TRUE, sparse=TRUE){
   clip <- as.numeric(clip*dl$clip)
   if(dl$form=="mult"){
     Q <- load_Q(from_to, Xb_q_r, Xb_q_m, dl$ns, 
-                     link_r = which(dl$link_r==c("soft_plus", "log","logit")), 
-                     a_r = dl$a_r, l_r=dl$l_r, u_r=dl$u_r,
-                     link_m = which(dl$link_m==c("soft_plus", "log")), 
-                     a_m=dl$a_m, dl$norm, clip)
+                link_r = which(dl$link_r==c("soft_plus", "log","logit")), 
+                a_r = dl$a_r, l_r=dl$l_r, u_r=dl$u_r,
+                link_m = which(dl$link_m==c("soft_plus", "log", "logit")), # <-- Added "logit" here
+                a_m=dl$a_m, dl$norm, clip)
   } 
-    # else if(dl$form=="add"){
-  #   Q <- load_Q_add(from_to, Xb_q_r, Xb_q_m, dl$ns,  
-  #                   link_r = which(dl$link_r==c("soft_plus", "log")), 
-  #                   link_m = which(dl$link_m==c("soft_plus", "log")), 
-  #                   a_r = dl$a_r, a_m=dl$a_m, dl$clip) 
-  # } 
-    else{
+  else{
     Q <- load_Q_sde(from_to, Xb_q_r, Xb_q_m, dl$hij, dl$ns, dl$k, clip) 
   }
   if(!sparse) Q <- as.matrix(Q)

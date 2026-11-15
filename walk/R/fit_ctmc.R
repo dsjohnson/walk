@@ -83,7 +83,7 @@ fit_ctmc <- function(walk_data,
     link_m <- model_parameters$q_m$link
   }
   if(!link_r%in%c("soft_plus","log","logit")) stop("The 'link_r' objects in must be either 'soft_plus', 'log', or 'logit'")
-  if(!link_m%in%c("soft_plus","log")) stop("The 'link_m' objects in must be either 'soft_plus' or 'log'.")
+  if(!link_m%in%c("soft_plus","log","logit")) stop("The 'link_m' objects in must be either 'soft_plus', 'log', or 'logit'")
   
   
   form <- model_parameters$form
